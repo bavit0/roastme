@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -165,66 +166,50 @@
             color: #a0a0c0;
             font-size: 0.9rem;
         }
-        .roast-result {
+        .repo-section {
             background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 30px;
-            margin-bottom: 30px;
-            border: 1px solid rgba(255, 107, 107, 0.3);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-        }
-        .roast-title {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 20px;
-            color: #ff6b6b;
-            font-size: 1.5rem;
-        }
-        .roast-content {
-            font-size: 1.2rem;
-            line-height: 1.7;
-            color: #e0e0ff;
-        }
-        .emoji-hall-of-shame {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 30px;
-            border: 1px solid rgba(255, 215, 0, 0.3);
-            margin-bottom: 30px;
-        }
-        .hall-title {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 20px;
-            color: #ffd700;
-            font-size: 1.5rem;
-        }
-        .emoji-grid {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-        .shame-emoji {
-            font-size: 2.5rem;
-            background: rgba(255, 215, 0, 0.1);
             border-radius: 15px;
-            padding: 15px;
-            border: 1px solid rgba(255, 215, 0, 0.3);
-            animation: shake 3s infinite;
+            padding: 20px;
+            margin-bottom: 20px;
         }
-        .shame-emoji:nth-child(2) { animation-delay: 0.2s; }
-        .shame-emoji:nth-child(3) { animation-delay: 0.4s; }
-        .shame-emoji:nth-child(4) { animation-delay: 0.6s; }
-        .shame-emoji:nth-child(5) { animation-delay: 0.8s; }
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-5px); }
-            75% { transform: translateX(5px); }
+        .repo-title {
+            font-weight: bold;
+            color: #ffa502;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .repo-url {
+            color: #4ecdc4;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+        .repo-url:hover {
+            text-decoration: underline;
+        }
+        .commit-list {
+            max-height: 300px;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+        .commit-item {
+            padding: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .commit-item:last-child {
+            border-bottom: none;
+        }
+        .commit-message {
+            font-weight: bold;
+            color: #4ecdc4;
+            margin-bottom: 5px;
+        }
+        .commit-date {
+            font-size: 0.8rem;
+            color: #a0a0c0;
         }
         .faq-section, .about-section, .hall-of-fame-section, .compiler-section {
             background: rgba(255, 255, 255, 0.05);
@@ -378,50 +363,24 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        .commit-list {
-            max-height: 300px;
-            overflow-y: auto;
-            background: rgba(0, 0, 0, 0.2);
+        .toggle-results-btn {
+            display: none;
+            width: 100%;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
             border-radius: 10px;
-            padding: 15px;
-            margin-top: 15px;
-        }
-        .commit-item {
-            padding: 10px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        .commit-item:last-child {
-            border-bottom: none;
-        }
-        .commit-message {
-            font-weight: bold;
             color: #4ecdc4;
-            margin-bottom: 5px;
-        }
-        .commit-date {
-            font-size: 0.8rem;
-            color: #a0a0c0;
-        }
-        .repo-section {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 20px;
-        }
-        .repo-title {
+            cursor: pointer;
+            transition: all 0.3s ease;
             font-weight: bold;
-            color: #ffa502;
-            margin-bottom: 10px;
-            display: flex;
-            justify-content: space-between;
+            margin-top: 20px;
         }
-        .repo-url {
-            color: #4ecdc4;
-            text-decoration: none;
-            font-size: 0.9rem;
+        .toggle-results-btn:hover {
+            background: rgba(78, 205, 196, 0.2);
         }
-        .repo-url:hover {
-            text-decoration: underline;
+        .results-section {
+            display: none;
         }
         .warning-widget {
             background: rgba(255, 255, 255, 0.05);
@@ -584,6 +543,7 @@
                     <span>Scanning repositories...</span>
                 </div>
             </div>
+            <button class="toggle-results-btn" id="toggle-results-btn">Show Analysis Results</button>
         </section>
         <div class="nav-buttons">
             <button class="nav-btn" id="faq-btn">FAQ</button>
@@ -673,7 +633,7 @@
                 </p>
             </div>
         </section>
-        <section class="results-section" style="display: none;">
+        <section class="results-section" id="results-section">
             <div class="stats-container">
                 <div class="stat-card">
                     <div class="stat-icon">📊</div>
@@ -681,52 +641,19 @@
                     <div class="stat-label">Commits</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-icon">🔥</div>
-                    <div class="stat-value" id="streak-count">0</div>
-                    <div class="stat-label">Day Streak</div>
+                    <div class="stat-icon">📦</div>
+                    <div class="stat-value" id="owned-repo-count">0</div>
+                    <div class="stat-label">Owned Repos</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-icon">👥</div>
-                    <div class="stat-value" id="follower-count">0</div>
-                    <div class="stat-label">Followers</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon">🎭</div>
-                    <div class="stat-value" id="emoji-count">0</div>
-                    <div class="stat-label">Emojis Used</div>
+                    <div class="stat-icon">🤝</div>
+                    <div class="stat-value" id="contributed-repo-count">0</div>
+                    <div class="stat-label">Contributed To</div>
                 </div>
             </div>
-            <div class="roast-result">
-                <div class="roast-title">
-                    <span>💀</span>
-                    <h2>ROAST DELIVERED</h2>
-                </div>
-                <div class="roast-content" id="roast-content">
-                    Oh wow, john_doe! With 1,337 commits and only 12 followers, your code is more lonely than a sock in a dryer. Those 🪄🔮✨ emojis in your commits are giving me secondhand embarrassment! Your commit message "🔮 magic fix" is not documentation, it's a cry for help. Even my grandma updates her Facebook more regularly!
-                </div>
-            </div>
-            <div class="emoji-hall-of-shame">
-                <div class="hall-title">
-                    <span>☕</span>
-                    <h2>QUESTIONABLE EMOJI HALL OF SHAME</h2>
-                </div>
-                <div class="emoji-grid" id="emoji-grid">
-                    <div class="shame-emoji">🍖</div>
-                    <div class="shame-emoji">♨️</div>
-                    <div class="shame-emoji">🥩</div>
-                    <div class="shame-emoji">🥓</div>
-                    <div class="shame-emoji">🍳</div>
-                </div>
-                <p style="color: #a0a0c0; font-style: italic;">These emojis have been scientifically proven to decrease code quality and increase WTFs/minute</p>
-            </div>
-            <div class="repo-section">
-                <div class="repo-title">
-                    <span>🔥</span>
-                    <h3>REPOSITORY ANALYSIS</h3>
-                </div>
-                <div id="repo-analysis">
-                    <p>Analyzing repositories and commit history...</p>
-                </div>
+            <div class="repo-analysis" id="repo-analysis">
+                <h2 style="color: #4ecdc4; margin-bottom: 20px;">Repository Analysis</h2>
+                <p>Analyzing repositories and commit history...</p>
             </div>
         </section>
         <footer class="disclaimer">
@@ -742,7 +669,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             const roastBtn = document.getElementById('roast-btn');
             const usernameInput = document.getElementById('username');
-            const resultsSection = document.querySelector('.results-section');
+            const resultsSection = document.getElementById('results-section');
             const faqBtn = document.getElementById('faq-btn');
             const aboutBtn = document.getElementById('about-btn');
             const hallOfFameBtn = document.getElementById('hall-of-fame-btn');
@@ -760,10 +687,12 @@
             const warningContent = document.getElementById('warning-content');
             const warningButtons = document.querySelector('.warning-buttons');
             const awareBtn = document.getElementById('aware-btn');
+            const toggleResultsBtn = document.getElementById('toggle-results-btn');
+            let analysisCompleted = false;
             roastBtn.addEventListener('click', async function() {
                 const username = usernameInput.value.trim();
                 if (username !== '') {
-                    // Check if we need to show the warning
+                    // Check if we need to show the warning (no token stored)
                     if (!GITHUB_TOKEN) {
                         warningWidget.style.display = 'block';
                         warningWidget.scrollIntoView({ behavior: 'smooth' });
@@ -782,8 +711,8 @@
             // Aware button click handler
             awareBtn.addEventListener('click', function() {
                 // Update warning content
+                document.querySelector('.warning-title').textContent = '🤖🤖 ARE you sure? 🤖🤖';
                 warningContent.innerHTML = `
-                    <h3 style="color: #ff6b6b; margin-bottom: 15px;">🤖🤖 ARE you sure? 🤖🤖</h3>
                     <p>Without a valid token, our superpowers are severely capped, we can only handle 50 requests/hour (~500 commits).</p>
                     <p>Want more results? You'll have to wait it out like a mere mortal ⏳.</p>
                     <p style="color: #ff6b6b; font-weight: bold; margin-top: 15px;">⚠️ And beware: the whole site will crash and burn if you provide an invalid token!</p>
@@ -830,8 +759,7 @@
             });
             // Hall of Fame button functionality (fire icon)
             hallOfFameBtn.addEventListener('click', function() {
-                // Hide all other sections
-                resultsSection.style.display = 'none';
+                // Hide all other sections except results
                 faqSection.style.display = 'none';
                 aboutSection.style.display = 'none';
                 compilerSection.style.display = 'none';
@@ -846,8 +774,7 @@
             });
             // FAQ button functionality
             faqBtn.addEventListener('click', function() {
-                // Hide all other sections
-                resultsSection.style.display = 'none';
+                // Hide all other sections except results
                 aboutSection.style.display = 'none';
                 hallOfFameSection.style.display = 'none';
                 compilerSection.style.display = 'none';
@@ -864,8 +791,7 @@
             });
             // About button functionality
             aboutBtn.addEventListener('click', function() {
-                // Hide all other sections
-                resultsSection.style.display = 'none';
+                // Hide all other sections except results
                 faqSection.style.display = 'none';
                 hallOfFameSection.style.display = 'none';
                 compilerSection.style.display = 'none';
@@ -891,8 +817,7 @@
                     e.clientX <= centerX + hitboxSize && 
                     e.clientY >= centerY - hitboxSize && 
                     e.clientY <= centerY + hitboxSize) {
-                    // Hide all other sections
-                    resultsSection.style.display = 'none';
+                    // Hide all other sections except results
                     faqSection.style.display = 'none';
                     aboutSection.style.display = 'none';
                     hallOfFameSection.style.display = 'none';
@@ -917,6 +842,16 @@
                     compilerTrigger.style.cursor = 'pointer';
                 }
             });
+            // Toggle results button functionality
+            toggleResultsBtn.addEventListener('click', function() {
+                if (resultsSection.style.display === 'none') {
+                    resultsSection.style.display = 'block';
+                    toggleResultsBtn.textContent = 'Hide Analysis Results';
+                } else {
+                    resultsSection.style.display = 'none';
+                    toggleResultsBtn.textContent = 'Show Analysis Results';
+                }
+            });
             // Progress update function
             function updateProgress(percent, message) {
                 progressFill.style.width = `${percent}%`;
@@ -936,8 +871,12 @@
                 try {
                     // Analyze user
                     await analyzeUser(username);
-                    // Show results
+                    // Show results section
                     resultsSection.style.display = 'block';
+                    analysisCompleted = true;
+                    // Show toggle button
+                    toggleResultsBtn.style.display = 'block';
+                    toggleResultsBtn.textContent = 'Hide Analysis Results';
                     // Scroll to results
                     resultsSection.scrollIntoView({ behavior: 'smooth' });
                     // Add animation effect
@@ -1126,8 +1065,8 @@
                 // Process all promises concurrently with progress updates
                 const totalRepos = commitPromises.length;
                 const results = [];
-                // Process in batches to show progress
-                const batchSize = 5;
+                // Process in batches to show progress - increased batch size for faster processing
+                const batchSize = 10;
                 for (let i = 0; i < commitPromises.length; i += batchSize) {
                     const batch = commitPromises.slice(i, i + batchSize);
                     const batchResults = await Promise.all(batch);
@@ -1142,13 +1081,17 @@
                 const repoCommits = [];
                 let hasCommitsNextPage = true;
                 let commitsEndCursor = null;
-                // Fetch commits without author filter to get all commits
-                while (hasCommitsNextPage && repoCommits.length < 1000) {
+                // Fetch commits with author filter to get only user commits
+                let iterations = 0;
+                const maxIterations = 10; // Increased iterations for more commits
+                while (hasCommitsNextPage && repoCommits.length < 1000 && iterations < maxIterations) {
                     const first = Math.min(100, 1000 - repoCommits.length);
                     let historyArgs = `first: ${first}`;
                     if (commitsEndCursor) {
                         historyArgs += `, after: "${commitsEndCursor}"`;
                     }
+                    // Add author filter to get only commits by the user
+                    historyArgs += `, author: {id: "${userId}"}`;
                     const query = `
                         query {
                             repository(owner: "${owner}", name: "${name}") {
@@ -1198,86 +1141,30 @@
                     }
                     const history = data.defaultBranchRef.target.history;
                     const edges = history.edges;
-                    // Filter commits by user if this is a contributed repo
-                    const isOwnedRepo = false; // We'll include all commits for analysis
+                    // Map commits
                     const newCommits = edges
                         .map(edge => ({
                             message: edge.node.message,
                             date: edge.node.committedDate,
                             author: edge.node.author?.user?.login || 'Unknown'
-                        }))
-                        .filter(commit => {
-                            // For contributed repos, only include commits by the user
-                            return commit.author === username;
-                        });
+                        }));
                     repoCommits.push(...newCommits);
                     hasCommitsNextPage = history.pageInfo.hasNextPage;
                     commitsEndCursor = history.pageInfo.endCursor;
+                    iterations++;
                 }
                 return repoCommits;
-            }
-            function generateRoast(username, stats, commitsData) {
-                const totalCommits = stats.totalCommits;
-                const followers = stats.followers;
-                const emojisUsed = stats.emojisUsed;
-                const ownedRepos = stats.ownedRepos;
-                const contributedRepos = stats.contributedRepos;
-                // Generate roast based on stats
-                let roast = `Oh wow, ${username}! `;
-                if (totalCommits > 1000) {
-                    roast += `With ${totalCommits.toLocaleString()} commits, you're either a coding machine or have serious commitment issues (probably both). `;
-                } else if (totalCommits > 500) {
-                    roast += `With ${totalCommits.toLocaleString()} commits, you're moderately productive - good enough to be dangerous. `;
-                } else {
-                    roast += `With only ${totalCommits.toLocaleString()} commits, your GitHub profile is more active than my social life. `;
-                }
-                if (followers < 20) {
-                    roast += `Those ${followers} followers are probably just bots or your mom. `;
-                } else if (followers < 100) {
-                    roast += `With ${followers} followers, you're more popular than my cat's Instagram. `;
-                } else {
-                    roast += `With ${followers} followers, you're basically a GitHub influencer. `;
-                }
-                if (emojisUsed > 50) {
-                    roast += `Those ${emojisUsed} emojis in your commits are giving me secondhand embarrassment! `;
-                }
-                if (ownedRepos > 50) {
-                    roast += `You own ${ownedRepos} repositories - that's either impressive dedication or digital hoarding. `;
-                }
-                if (contributedRepos > 20) {
-                    roast += `Contributing to ${contributedRepos} repos shows you're a team player (or just can't keep your own code working). `;
-                }
-                // Add commit message analysis
-                if (commitsData.length > 0) {
-                    const sampleCommit = commitsData[0].commits[0];
-                    if (sampleCommit && sampleCommit.message) {
-                        const message = sampleCommit.message.toLowerCase();
-                        if (message.includes('fix') || message.includes('bug')) {
-                            roast += `Your commit messages read like a diary of someone who codes in crisis mode. `;
-                        } else if (message.includes('magic') || message.includes('wizard')) {
-                            roast += `Your commit message "${sampleCommit.message}" is not documentation, it's a cry for help. `;
-                        } else if (message.length < 5) {
-                            roast += `Your commit messages are more cryptic than ancient hieroglyphs. `;
-                        }
-                    }
-                }
-                roast += "Even my grandma updates her Facebook more regularly!";
-                return roast;
             }
             function displayResults(username, stats, commitsData) {
                 // Update stats
                 document.getElementById('commit-count').textContent = stats.totalCommits.toLocaleString();
-                document.getElementById('streak-count').textContent = stats.streak || 0;
-                document.getElementById('follower-count').textContent = stats.followers;
-                document.getElementById('emoji-count').textContent = stats.emojisUsed;
-                // Generate and display roast
-                const roastContent = generateRoast(username, stats, commitsData);
-                document.getElementById('roast-content').textContent = roastContent;
+                document.getElementById('owned-repo-count').textContent = stats.ownedRepos;
+                document.getElementById('contributed-repo-count').textContent = stats.contributedRepos;
                 // Display repository analysis
                 const repoAnalysis = document.getElementById('repo-analysis');
-                repoAnalysis.innerHTML = '';
+                repoAnalysis.innerHTML = '<h2 style="color: #4ecdc4; margin-bottom: 20px;">Repository Analysis</h2>';
                 if (commitsData.length === 0) {
-                    repoAnalysis.innerHTML = '<p>No commit data available for analysis.</p>';
+                    repoAnalysis.innerHTML += '<p>No commit data available for analysis.</p>';
                     return;
                 }
                 // Show top repositories by commit count
@@ -1317,15 +1204,12 @@
                         username
                     );
                     // Step 4: Calculate stats
-                    updateProgress(95, 'Generating roast...');
+                    updateProgress(95, 'Generating analysis...');
                     const totalCommits = commitsData.reduce((sum, repo) => sum + repo.commit_count, 0);
                     const stats = {
                         totalCommits: totalCommits,
                         ownedRepos: ownedRepos.length,
-                        contributedRepos: contributedRepos.length,
-                        followers: Math.floor(Math.random() * 100) + 1, // Mock data
-                        emojisUsed: Math.floor(Math.random() * 200) + 10, // Mock data
-                        streak: Math.floor(Math.random() * 365) // Mock data
+                        contributedRepos: contributedRepos.length
                     };
                     // Step 5: Display results
                     updateProgress(100, 'Analysis complete!');
@@ -1338,3 +1222,4 @@
     </script>
 </body>
 </html>
+```
