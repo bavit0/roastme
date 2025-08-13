@@ -211,7 +211,7 @@
             font-size: 0.8rem;
             color: #a0a0c0;
         }
-        .faq-section, .about-section, .hall-of-fame-section, .compiler-section {
+        .faq-section, .about-section, .hall-of-fame-section, .compiler-section, .token-section {
             background: rgba(255, 255, 255, 0.05);
             backdrop-filter: blur(10px);
             border-radius: 20px;
@@ -220,7 +220,7 @@
             border: 1px solid rgba(255, 255, 255, 0.1);
             display: none;
         }
-        .faq-section h2, .about-section h2, .hall-of-fame-section h2, .compiler-section h2 {
+        .faq-section h2, .about-section h2, .hall-of-fame-section h2, .compiler-section h2, .token-section h2 {
             color: #4ecdc4;
             margin-bottom: 20px;
             font-size: 1.8rem;
@@ -402,6 +402,7 @@
             line-height: 1.6;
             margin-bottom: 25px;
             color: #e0e0ff;
+            text-align: justify;
         }
         .warning-content a {
             color: #4ecdc4;
@@ -468,6 +469,23 @@
             outline: none;
             border-color: #4ecdc4;
         }
+        .token-status {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+        }
+        .token-valid {
+            background: rgba(46, 204, 113, 0.2);
+            color: #2ecc71;
+            border: 1px solid rgba(46, 204, 113, 0.3);
+        }
+        .token-invalid {
+            background: rgba(231, 76, 60, 0.2);
+            color: #e74c3c;
+            border: 1px solid rgba(231, 76, 60, 0.3);
+        }
         @media (max-width: 768px) {
             .input-group {
                 flex-direction: column;
@@ -525,9 +543,9 @@
             <div class="warning-widget" id="warning-widget" style="display: none;">
                 <h2 class="warning-title">🚨📢🔔⚠️ Heads up! 🚨📢🔔⚠️</h2>
                 <div class="warning-content" id="warning-content">
-                    <p>🔒 Privacy notice: No data is stored or sent anywhere—this runs entirely in your browser purely with client-side magic.</p>
-                    <p>To fetch GitHub commits and repos, we'll need a personal access token to avoid the guest rate limit (50 requests/hour). If you don't have one yet, you can create it here: <a href="https://github.com/settings/personal-access-tokens" target="_blank">https://github.com/settings/personal-access-tokens</a> 🔑.</p>
-                    <p>If you'd rather not use your account token, no worries ✨ Just keep in mind there's a limit of 50 requests per hour ⏳.</p>
+                    <p>🔒 Privacy notice: No data is stored or sent anywhere—everything runs in your browser using client-side magic. ✨</p>
+                    <p>To fetch GitHub commits and repos, you'll need a personal access token to avoid the guest rate limit (50 requests/hour). If you don't have one yet, you can create it here: <a href="https://github.com/settings/personal-access-tokens" target="_blank">GitHub Personal Access Tokens</a> 🔑</p>
+                    <p>If you'd rather not use your account token, no worries! Just keep in mind there's a 50 requests/hour limit ⏳.</p>
                 </div>
                 <div class="warning-buttons">
                     <button class="warning-btn secondary-btn" id="aware-btn">I'm aware</button>
@@ -546,9 +564,21 @@
             <button class="toggle-results-btn" id="toggle-results-btn">Show Analysis Results</button>
         </section>
         <div class="nav-buttons">
+            <button class="nav-btn" id="token-btn">TOKEN</button>
             <button class="nav-btn" id="faq-btn">FAQ</button>
-            <button class="nav-btn" id="about-btn">About GitHub Roaster</button>
+            <button class="nav-btn" id="about-btn">ABOUT</button>
         </div>
+        <section class="token-section" id="token-section">
+            <h2>🔑 TOKEN MANAGEMENT</h2>
+            <div class="token-input-container">
+                <p>Enter your GitHub personal access token:</p>
+                <div class="token-input-group">
+                    <input type="password" id="token-input" placeholder="Enter your token here...">
+                    <button class="warning-btn primary-btn" id="save-token-btn">Save Token</button>
+                </div>
+                <div id="token-status" class="token-status" style="display: none;"></div>
+            </div>
+        </section>
         <section class="hall-of-fame-section" id="hall-of-fame-section">
             <h2>🔥 HALL OF FAME</h2>
             <div class="hall-of-fame-content">
@@ -597,7 +627,7 @@
             </div>
         </section>
         <section class="about-section" id="about-section">
-            <h2>🚀 About GitHub Roaster</h2>
+            <h2>🚀 ABOUT</h2>
             <div class="about-content">
                 <p>Once upon a time, in a dimly lit coding bootcamp (the fluorescent lights were flickering ominously), a group of brave developers and their AI companions united to create the most unnecessarily brutal GitHub roasting tool known to humanity.</p>
                 <p>Our founding team consisted of:</p>
@@ -672,10 +702,12 @@
             const resultsSection = document.getElementById('results-section');
             const faqBtn = document.getElementById('faq-btn');
             const aboutBtn = document.getElementById('about-btn');
+            const tokenBtn = document.getElementById('token-btn');
             const hallOfFameBtn = document.getElementById('hall-of-fame-btn');
             const compilerTrigger = document.getElementById('compiler-trigger');
             const faqSection = document.getElementById('faq-section');
             const aboutSection = document.getElementById('about-section');
+            const tokenSection = document.getElementById('token-section');
             const hallOfFameSection = document.getElementById('hall-of-fame-section');
             const compilerSection = document.getElementById('compiler-section');
             const navButtons = document.querySelectorAll('.nav-btn');
@@ -688,7 +720,14 @@
             const warningButtons = document.querySelector('.warning-buttons');
             const awareBtn = document.getElementById('aware-btn');
             const toggleResultsBtn = document.getElementById('toggle-results-btn');
+            const tokenInput = document.getElementById('token-input');
+            const saveTokenBtn = document.getElementById('save-token-btn');
+            const tokenStatus = document.getElementById('token-status');
             let analysisCompleted = false;
+            // Load saved token if exists
+            if (GITHUB_TOKEN) {
+                tokenInput.value = GITHUB_TOKEN;
+            }
             roastBtn.addEventListener('click', async function() {
                 const username = usernameInput.value.trim();
                 if (username !== '') {
@@ -730,15 +769,15 @@
                     tokenInputContainer.innerHTML = `
                         <p>Enter your GitHub personal access token:</p>
                         <div class="token-input-group">
-                            <input type="password" id="token-input" placeholder="Enter your token here...">
-                            <button class="warning-btn primary-btn" id="save-token-btn">Save Token</button>
+                            <input type="password" id="token-input-popup" placeholder="Enter your token here...">
+                            <button class="warning-btn primary-btn" id="save-token-popup-btn">Save Token</button>
                         </div>
                     `;
                     warningWidget.appendChild(tokenInputContainer);
                     // Add event listener to save token button
-                    document.getElementById('save-token-btn').addEventListener('click', function() {
-                        const tokenInput = document.getElementById('token-input');
-                        const token = tokenInput.value.trim();
+                    document.getElementById('save-token-popup-btn').addEventListener('click', function() {
+                        const tokenInputPopup = document.getElementById('token-input-popup');
+                        const token = tokenInputPopup.value.trim();
                         if (token) {
                             localStorage.setItem('github_token', token);
                             GITHUB_TOKEN = token;
@@ -757,11 +796,51 @@
                     performAnalysis(usernameInput.value.trim());
                 });
             });
+            // Token button functionality
+            tokenBtn.addEventListener('click', function() {
+                // Hide all other sections
+                faqSection.style.display = 'none';
+                aboutSection.style.display = 'none';
+                hallOfFameSection.style.display = 'none';
+                compilerSection.style.display = 'none';
+                navButtons.forEach(btn => btn.classList.remove('active'));
+                // Toggle Token section
+                if (tokenSection.style.display === 'block') {
+                    tokenSection.style.display = 'none';
+                } else {
+                    tokenSection.style.display = 'block';
+                    tokenBtn.classList.add('active');
+                    // Check token status if token exists
+                    if (GITHUB_TOKEN) {
+                        checkTokenStatus(GITHUB_TOKEN);
+                    }
+                }
+                tokenSection.scrollIntoView({ behavior: 'smooth' });
+            });
+            // Save token button functionality
+            saveTokenBtn.addEventListener('click', async function() {
+                const token = tokenInput.value.trim();
+                if (token) {
+                    // Test token validity
+                    const isValid = await testToken(token);
+                    if (isValid) {
+                        localStorage.setItem('github_token', token);
+                        GITHUB_TOKEN = token;
+                        HEADERS = { "Authorization": `bearer ${GITHUB_TOKEN}` };
+                        showTokenStatus('Token is valid and saved!', true);
+                    } else {
+                        showTokenStatus('Invalid token. Please check and try again.', false);
+                    }
+                } else {
+                    showTokenStatus('Please enter a token', false);
+                }
+            });
             // Hall of Fame button functionality (fire icon)
             hallOfFameBtn.addEventListener('click', function() {
                 // Hide all other sections except results
                 faqSection.style.display = 'none';
                 aboutSection.style.display = 'none';
+                tokenSection.style.display = 'none';
                 compilerSection.style.display = 'none';
                 navButtons.forEach(btn => btn.classList.remove('active'));
                 // Toggle Hall of Fame section
@@ -776,6 +855,7 @@
             faqBtn.addEventListener('click', function() {
                 // Hide all other sections except results
                 aboutSection.style.display = 'none';
+                tokenSection.style.display = 'none';
                 hallOfFameSection.style.display = 'none';
                 compilerSection.style.display = 'none';
                 // Toggle FAQ section
@@ -786,6 +866,7 @@
                     faqSection.style.display = 'block';
                     faqBtn.classList.add('active');
                     aboutBtn.classList.remove('active');
+                    tokenBtn.classList.remove('active');
                 }
                 faqSection.scrollIntoView({ behavior: 'smooth' });
             });
@@ -793,6 +874,7 @@
             aboutBtn.addEventListener('click', function() {
                 // Hide all other sections except results
                 faqSection.style.display = 'none';
+                tokenSection.style.display = 'none';
                 hallOfFameSection.style.display = 'none';
                 compilerSection.style.display = 'none';
                 // Toggle About section
@@ -803,6 +885,7 @@
                     aboutSection.style.display = 'block';
                     aboutBtn.classList.add('active');
                     faqBtn.classList.remove('active');
+                    tokenBtn.classList.remove('active');
                 }
                 aboutSection.scrollIntoView({ behavior: 'smooth' });
             });
@@ -820,6 +903,7 @@
                     // Hide all other sections except results
                     faqSection.style.display = 'none';
                     aboutSection.style.display = 'none';
+                    tokenSection.style.display = 'none';
                     hallOfFameSection.style.display = 'none';
                     navButtons.forEach(btn => btn.classList.remove('active'));
                     // Toggle Compiler section
@@ -857,6 +941,43 @@
                 progressFill.style.width = `${percent}%`;
                 progressText.textContent = message;
             }
+            // Token status display function
+            function showTokenStatus(message, isValid) {
+                tokenStatus.textContent = message;
+                tokenStatus.className = 'token-status';
+                tokenStatus.classList.add(isValid ? 'token-valid' : 'token-invalid');
+                tokenStatus.style.display = 'block';
+            }
+            // Token validation function
+            async function testToken(token) {
+                try {
+                    const testHeaders = { "Authorization": `bearer ${token}` };
+                    const query = `
+                        query {
+                            viewer {
+                                login
+                            }
+                        }
+                    `;
+                    const response = await fetch(GRAPHQL_URL, {
+                        method: 'POST',
+                        headers: testHeaders,
+                        body: JSON.stringify({ query: query })
+                    });
+                    return response.ok;
+                } catch (error) {
+                    return false;
+                }
+            }
+            // Check and display token status
+            async function checkTokenStatus(token) {
+                const isValid = await testToken(token);
+                if (isValid) {
+                    showTokenStatus('Current token is valid', true);
+                } else {
+                    showTokenStatus('Current token is invalid', false);
+                }
+            }
             // Main analysis function
             async function performAnalysis(username) {
                 // Show progress container
@@ -865,6 +986,7 @@
                 // Hide all other sections
                 faqSection.style.display = 'none';
                 aboutSection.style.display = 'none';
+                tokenSection.style.display = 'none';
                 hallOfFameSection.style.display = 'none';
                 compilerSection.style.display = 'none';
                 navButtons.forEach(btn => btn.classList.remove('active'));
