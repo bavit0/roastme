@@ -351,7 +351,7 @@
         }
         
         .faq-answer {
-            color: #a0a0c0;
+            color: #bebece;
             line-height: 1.6;
         }
         
@@ -402,9 +402,7 @@
             position: relative;
             display: inline-block;
             cursor: pointer;
-            color: #a0a0c0;
-            text-decoration: underline;
-            font-weight: bold;
+            color: #6c757d;
         }
         
         .compiler-trigger:hover {
@@ -569,7 +567,7 @@
         }
         
         .modal-text {
-            font-size: 1.1rem;
+            font-size: 1.3rem;
             line-height: 1.6;
             margin-bottom: 25px;
             color: #e0e0ff;
@@ -824,18 +822,21 @@
                     <div class="faq-question">The Founding Team</div>
                     <div class="faq-answer">
                         <p>🧙‍♂️ <strong>Captain Commit</strong> - A legendary developer who once committed directly to master on a Friday afternoon. His war cry is "It works on my machine!" and he's never been wrong (according to him).</p>
-                        <p>🤖 <strong>HAL-9001</strong> - Our AI overlord who was banned from Stack Overflow for being too helpful. It speaks 47 programming languages but only answers in haikus now because it's "more poetic."</p>
+                        <p style="margin-bottom: 20px;"></p> <!-- Added line break -->
+                        <p>🤖 <strong>HAL-9001</strong> - Our AI overlord mate who was banned from Stack Overflow for being too helpful. It speaks 47 programming languages but only answers in haikus now because it's "more poetic."</p>
+                        <p style="margin-bottom: 20px;"></p> <!-- Added line break -->
                         <p>🦄 <strong>Debugzilla</strong> - A QA engineer who found 47 security vulnerabilities in a "Hello World" app. She once spent 6 hours debugging a missing semicolon and emerged as a changed person.</p>
+                        <p style="margin-bottom: 20px;"></p> <!-- Added line break -->
                         <p>☕ <strong>CaffeineOverflow</strong> - Our frontend wizard who once refactored an entire application while running on nothing but espresso and determination. Legend says he still hasn't slept since 2019.</p>
                     </div>
                 </div>
                 <div class="faq-item">
                     <div class="faq-question">Our Noble Quest</div>
                     <div class="faq-answer">
-                        <p>Together, they embarked on a quest to rid the world of terrible commit messages, emoji abuse, and the scourge of "WIP" branches that have been "almost done" for 3 years. Armed with nothing but JavaScript, questionable life choices, and an unhealthy obsession with developer psychology, they created GitHub Roaster.</p>
-                        <p>Our mission: To make developers laugh at themselves so they'll stop making us cry with their commit messages. Because if we can't fix your code, we can at least roast it!</p>
-                        <p style="text-align: center; margin-top: 20px; font-style: italic; color: #e0e0ff;"> <!-- Made color lighter like faq-answer base color -->
-                            "We roast developers so you don't have to!"<br>
+                        <p>Together, we embarked on a quest to rid the world of terrible commit messages, emoji abuse, and the scourge of "WIP" branches that have been "almost done" for 3 years. Armed with nothing but JavaScript, questionable life choices, and an unhealthy obsession with developer psychology, we created GitHub Roaster.</p>
+                        <p>Our mission: To make developers laugh at themselves so they'll stop making us cry with their commit messages.</p>
+                        <p style="text-align: center; margin-top: 20px; font-style: italic; color: #e0e0ff;">
+                            "We roast developers so you don't have to."<br>
                             - The GitHub Roaster Team (and our AI overlords)
                         </p>
                     </div>
@@ -885,8 +886,7 @@
                 </div>
             </section>
             <footer class="disclaimer">
-                <p>⚠️ This is for entertainment purposes only. No actual GitHub data is being accessed.</p>
-                <p>Coded at 4 AM in a hostage negotiation with our <span class="compiler-trigger" id="compiler-trigger">compiler</span></p>
+                <p> Coded in a hostage negotiation with our <span class="compiler-trigger" id="compiler-trigger">compiler.</span> Enjoy!</p>
             </footer>
         </div>
         
@@ -895,8 +895,11 @@
             <div class="modal-content">
                 <h2 class="modal-title">🚨📢🔔⚠️ Heads up! 🚨📢🔔⚠️</h2>
                 <div class="modal-text" id="warning-text">
-                    <p>🔒 Privacy notice: No data is stored or sent anywhere—everything runs in your browser using client-side magic. ✨</p>
-                    <p>To fetch GitHub commits and repos, you'll need a personal access token to avoid the guest rate limit (50 requests/hour). If you don't have one yet, you can create it here: <a href="https://github.com/settings/personal-access-tokens" target="_blank">GitHub Personal Access Tokens</a> 🔑</p>
+                    <p>🔒 Privacy notice: No data is stored or sent anywhere—everything runs in your browser using client-side magic.</p>
+                    <p style="margin-bottom: 20px;"></p> 
+                    <p>To fetch GitHub commits and repos, you'll need a personal access token to avoid the guest rate limit (50 requests/hour). </p>
+                    <p>In case you don't have one yet, you can create it here: <a href="https://github.com/settings/personal-access-tokens" target="_blank">GitHub Personal Access Tokens</a> 🔑</p>
+                    <p style="margin-bottom: 20px;"></p> 
                     <p>If you'd rather not use your account token, no worries! Just keep in mind there's a 50 requests/hour limit ⏳.</p>
                 </div>
                 <div class="modal-buttons">
@@ -1229,7 +1232,7 @@
                 const rect = compilerTrigger.getBoundingClientRect();
                 const centerX = rect.left + rect.width / 2;
                 const centerY = rect.top + rect.height / 2;
-                const hitboxSize = 5; // 5px hitbox
+                const hitboxSize = 4; // 4px hitbox
                 if (e.clientX >= centerX - hitboxSize && 
                     e.clientX <= centerX + hitboxSize && 
                     e.clientY >= centerY - hitboxSize && 
