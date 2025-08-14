@@ -1,8 +1,4 @@
-Okay, I understand. You want a version where if the user declines to provide a token (by clicking "Whatever 🙄"), the application proceeds with the analysis using anonymous/public access until it hits the GitHub API rate limit.
 
-Here's the modified code that implements this behavior. The key changes are in the `performAnalysis` function and the event handlers for the modals:
-
-```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -16,50 +12,94 @@ Here's the modified code that implements this behavior. The key changes are in t
             box-sizing: border-box;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
+
+        html {
+            /* Completely hide the vertical scrollbar */
+            overflow-y: hidden;
+        }
+
         body {
             background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
             color: #fff;
             min-height: 100vh;
             padding: 20px;
+            /* Prevent horizontal scrollbars */
             overflow-x: hidden;
         }
-        /* ===== Scrollbar Styles ===== */
-        /* Chrome, Edge, Safari */
-        ::-webkit-scrollbar {
-            width: 8px;
+
+        /* ===== Custom Scrollbar Implementation ===== */
+        .custom-scrollbar-container {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 12px;
+            height: 100vh;
+            z-index: 10000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
         }
-        ::-webkit-scrollbar-track {
+
+        .custom-scrollbar-container.visible {
+            opacity: 1;
+        }
+
+        .custom-scrollbar-track {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
             background: transparent;
-            border-radius: 4px;
-            margin: 10px 0;
         }
-        ::-webkit-scrollbar-thumb {
+
+        .custom-scrollbar-thumb {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
             background: linear-gradient(45deg, #ff6b6b, #ffa502);
-            border-radius: 4px;
-            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            min-height: 20px;
+            opacity: 0.7;
+            transition: opacity 0.2s, background 0.3s;
         }
-        ::-webkit-scrollbar-thumb:hover {
+
+        .custom-scrollbar-thumb:hover,
+        .custom-scrollbar-thumb.dragging {
+            opacity: 1;
             background: linear-gradient(45deg, #ff5252, #ffb74d);
         }
-        /* Remove scrollbar buttons */
-        ::-webkit-scrollbar-button {
-            display: none;
+
+        /* Main content wrapper */
+        .content-wrapper {
+            /* Add right margin to prevent content overlap with scrollbar */
+            margin-right: 12px;
+            /* Enable vertical scrolling for content */
+            height: 100vh;
+            overflow-y: auto;
+            overflow-x: hidden;
+            /* Hide native scrollbar for WebKit browsers */
+            scrollbar-width: none; /* Firefox */
         }
-        /* Firefox */
-        html {
-            scrollbar-width: thin;
-            scrollbar-color: #ff6b6b transparent;
+
+        .content-wrapper::-webkit-scrollbar {
+            display: none; /* Chrome, Safari, Opera */
         }
+
+        /* Rest of your original styles */
         .container {
             max-width: 800px;
             margin: 0 auto;
             padding: 20px;
         }
+        
         header {
             text-align: center;
             margin-bottom: 40px;
             padding: 20px;
         }
+        
         .logo {
             font-size: 3.5rem;
             margin-bottom: 15px;
@@ -68,10 +108,12 @@ Here's the modified code that implements this behavior. The key changes are in t
             cursor: pointer;
             transition: all 0.3s ease;
         }
+        
         .logo:hover {
             transform: scale(1.1) rotate(5deg);
             text-shadow: 0 0 25px rgba(255, 107, 107, 0.8);
         }
+        
         h1 {
             font-size: 2.8rem;
             margin-bottom: 15px;
@@ -82,11 +124,13 @@ Here's the modified code that implements this behavior. The key changes are in t
             background-size: 300% 300%;
             animation: gradient 3s ease infinite;
         }
+        
         @keyframes gradient {
             0% { background-position: 0% 50%; }
             50% { background-position: 100% 50%; }
             100% { background-position: 0% 50%; }
         }
+        
         .subtitle {
             font-size: 1.2rem;
             color: #a0a0c0;
@@ -94,6 +138,7 @@ Here's the modified code that implements this behavior. The key changes are in t
             margin: 0 auto 20px;
             line-height: 1.6;
         }
+        
         .emoji-showcase {
             display: flex;
             justify-content: center;
@@ -101,18 +146,22 @@ Here's the modified code that implements this behavior. The key changes are in t
             margin: 20px 0;
             flex-wrap: wrap;
         }
+        
         .emoji-showcase span {
             font-size: 2rem;
             animation: bounce 2s infinite;
         }
+        
         .emoji-showcase span:nth-child(2) { animation-delay: 0.2s; }
         .emoji-showcase span:nth-child(3) { animation-delay: 0.4s; }
         .emoji-showcase span:nth-child(4) { animation-delay: 0.6s; }
         .emoji-showcase span:nth-child(5) { animation-delay: 0.8s; }
+        
         @keyframes bounce {
             0%, 100% { transform: translateY(0); }
             50% { transform: translateY(-15px); }
         }
+        
         .input-section {
             background: rgba(255, 255, 255, 0.05);
             backdrop-filter: blur(10px);
@@ -122,11 +171,13 @@ Here's the modified code that implements this behavior. The key changes are in t
             border: 1px solid rgba(255, 255, 255, 0.1);
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
         }
+        
         .input-group {
             display: flex;
             gap: 15px;
             margin-bottom: 20px;
         }
+        
         #username {
             flex: 1;
             padding: 15px 20px;
@@ -138,14 +189,17 @@ Here's the modified code that implements this behavior. The key changes are in t
             border: 2px solid rgba(255, 255, 255, 0.1);
             transition: all 0.3s ease;
         }
+        
         #username:focus {
             outline: none;
             border-color: #ff6b6b;
             box-shadow: 0 0 20px rgba(255, 107, 107, 0.3);
         }
+        
         #username::placeholder {
             color: #6c757d;
         }
+        
         #roast-btn {
             padding: 15px 30px;
             background: linear-gradient(45deg, #ff6b6b, #ffa502);
@@ -158,19 +212,23 @@ Here's the modified code that implements this behavior. The key changes are in t
             transition: all 0.3s ease;
             box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
         }
+        
         #roast-btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 8px 25px rgba(255, 107, 107, 0.6);
         }
+        
         #roast-btn:active {
             transform: translateY(0);
         }
+        
         .stats-container {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 20px;
             margin-bottom: 30px;
         }
+        
         .stat-card {
             background: rgba(255, 255, 255, 0.08);
             border-radius: 15px;
@@ -179,31 +237,37 @@ Here's the modified code that implements this behavior. The key changes are in t
             border: 1px solid rgba(255, 255, 255, 0.1);
             transition: transform 0.3s ease;
         }
+        
         .stat-card:hover {
             transform: translateY(-5px);
             background: rgba(255, 255, 255, 0.12);
         }
+        
         .stat-icon {
             font-size: 2rem;
             margin-bottom: 10px;
             color: #4ecdc4;
         }
+        
         .stat-value {
             font-size: 1.8rem;
             font-weight: bold;
             margin-bottom: 5px;
             color: #ffa502;
         }
+        
         .stat-label {
             color: #a0a0c0;
             font-size: 0.9rem;
         }
+        
         .repo-section {
             background: rgba(255, 255, 255, 0.05);
             border-radius: 15px;
             padding: 20px;
             margin-bottom: 20px;
         }
+        
         .repo-title {
             font-weight: bold;
             color: #ffa502;
@@ -211,14 +275,17 @@ Here's the modified code that implements this behavior. The key changes are in t
             display: flex;
             justify-content: space-between;
         }
+        
         .repo-url {
             color: #4ecdc4;
             text-decoration: none;
             font-size: 0.9rem;
         }
+        
         .repo-url:hover {
             text-decoration: underline;
         }
+        
         .commit-list {
             max-height: 300px;
             overflow-y: auto;
@@ -226,48 +293,34 @@ Here's the modified code that implements this behavior. The key changes are in t
             border-radius: 10px;
             padding: 15px;
             margin-top: 15px;
+            /* Hide native scrollbar for commit lists too */
+            scrollbar-width: none;
         }
-        /* Commit list scrollbar */
+        
         .commit-list::-webkit-scrollbar {
-            width: 6px;
-        }
-        .commit-list::-webkit-scrollbar-track {
-            background: rgba(10, 15, 30, 0.3);
-            border-radius: 3px;
-            margin: 5px 0;
-        }
-        .commit-list::-webkit-scrollbar-thumb {
-            background: rgba(78, 205, 196, 0.6);
-            border-radius: 3px;
-        }
-        .commit-list::-webkit-scrollbar-thumb:hover {
-            background: rgba(78, 205, 196, 0.8);
-        }
-        /* Remove scrollbar buttons */
-        .commit-list::-webkit-scrollbar-button {
             display: none;
         }
-        /* Firefox scrollbar for commit list */
-        .commit-list {
-            scrollbar-width: thin;
-            scrollbar-color: #4ecdc4 rgba(10, 15, 30, 0.3);
-        }
+        
         .commit-item {
             padding: 10px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
+        
         .commit-item:last-child {
             border-bottom: none;
         }
+        
         .commit-message {
             font-weight: bold;
             color: #4ecdc4;
             margin-bottom: 5px;
         }
+        
         .commit-date {
             font-size: 0.8rem;
             color: #a0a0c0;
         }
+        
         .faq-section, .about-section, .hall-of-fame-section, .compiler-section, .token-section {
             background: rgba(255, 255, 255, 0.05);
             backdrop-filter: blur(10px);
@@ -277,40 +330,49 @@ Here's the modified code that implements this behavior. The key changes are in t
             border: 1px solid rgba(255, 255, 255, 0.1);
             display: none;
         }
+        
         .faq-section h2, .about-section h2, .hall-of-fame-section h2, .compiler-section h2, .token-section h2 {
             color: #4ecdc4;
             margin-bottom: 20px;
             font-size: 1.8rem;
         }
+        
         .faq-item {
             margin-bottom: 20px;
             padding-bottom: 15px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
+        
         .faq-question {
             font-weight: bold;
             color: #ffa502;
             margin-bottom: 8px;
             font-size: 1.1rem;
         }
+        
         .faq-answer {
             color: #a0a0c0;
             line-height: 1.6;
         }
+        
         .about-content, .compiler-content {
             line-height: 1.7;
             color: #e0e0ff;
         }
+        
         .about-content p, .compiler-content p {
             margin-bottom: 15px;
         }
+        
         .hall-of-fame-content {
             line-height: 1.7;
             color: #e0e0ff;
         }
+        
         .hall-of-fame-content p {
             margin-bottom: 15px;
         }
+        
         .roast-examples {
             background: rgba(255, 107, 107, 0.1);
             border-radius: 15px;
@@ -318,20 +380,24 @@ Here's the modified code that implements this behavior. The key changes are in t
             margin: 20px 0;
             border-left: 4px solid #ff6b6b;
         }
+        
         .roast-example {
             margin-bottom: 15px;
             padding-bottom: 15px;
             border-bottom: 1px dashed rgba(255, 255, 255, 0.2);
         }
+        
         .roast-example:last-child {
             margin-bottom: 0;
             padding-bottom: 0;
             border-bottom: none;
         }
+        
         .example-username {
             color: #ffa502;
             font-weight: bold;
         }
+        
         .compiler-trigger {
             position: relative;
             display: inline-block;
@@ -340,15 +406,18 @@ Here's the modified code that implements this behavior. The key changes are in t
             text-decoration: underline;
             font-weight: bold;
         }
+        
         .compiler-trigger:hover {
             color: #c0c0e0;
         }
+        
         .nav-buttons {
             display: flex;
             justify-content: center;
             gap: 20px;
             margin: 30px 0;
         }
+        
         .nav-btn {
             padding: 12px 25px;
             background: rgba(255, 255, 255, 0.1);
@@ -359,14 +428,17 @@ Here's the modified code that implements this behavior. The key changes are in t
             transition: all 0.3s ease;
             font-weight: bold;
         }
+        
         .nav-btn:hover {
             background: rgba(78, 205, 196, 0.2);
             transform: translateY(-2px);
         }
+        
         .nav-btn.active {
             background: rgba(78, 205, 196, 0.3);
             border-color: #4ecdc4;
         }
+        
         .disclaimer {
             text-align: center;
             color: #6c757d;
@@ -375,14 +447,15 @@ Here's the modified code that implements this behavior. The key changes are in t
             padding: 20px;
             border-top: 1px solid rgba(255, 255, 255, 0.1);
         }
+        
         .progress-container {
             background: rgba(255, 255, 255, 0.05);
             border-radius: 10px;
             padding: 15px;
             margin: 20px 0;
             display: none;
-            border: 1px solid rgba(255, 255, 255, 0.15);
         }
+        
         .progress-bar {
             height: 8px;
             background: rgba(255, 255, 255, 0.1);
@@ -390,17 +463,20 @@ Here's the modified code that implements this behavior. The key changes are in t
             overflow: hidden;
             margin-bottom: 10px;
         }
+        
         .progress-fill {
             height: 100%;
             background: linear-gradient(90deg, #ff6b6b, #ffa502);
             width: 0%;
             transition: width 0.3s ease;
         }
+        
         .progress-text {
             text-align: center;
             font-size: 0.9rem;
             color: #a0a0c0;
         }
+        
         .loading {
             display: flex;
             align-items: center;
@@ -409,6 +485,7 @@ Here's the modified code that implements this behavior. The key changes are in t
             color: #ffa502;
             font-style: italic;
         }
+        
         .spinner {
             width: 20px;
             height: 20px;
@@ -417,10 +494,12 @@ Here's the modified code that implements this behavior. The key changes are in t
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
+        
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+        
         .toggle-results-btn {
             display: none;
             width: 100%;
@@ -434,12 +513,15 @@ Here's the modified code that implements this behavior. The key changes are in t
             font-weight: bold;
             margin-top: 20px;
         }
+        
         .toggle-results-btn:hover {
             background: rgba(78, 205, 196, 0.2);
         }
+        
         .results-section {
             display: none;
         }
+        
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -456,10 +538,12 @@ Here's the modified code that implements this behavior. The key changes are in t
             visibility: hidden;
             transition: all 0.3s ease;
         }
+        
         .modal-overlay.active {
             opacity: 1;
             visibility: visible;
         }
+        
         .modal-content {
             background: rgba(30, 30, 50, 0.95);
             backdrop-filter: blur(15px);
@@ -472,15 +556,18 @@ Here's the modified code that implements this behavior. The key changes are in t
             transform: translateY(20px);
             transition: transform 0.3s ease;
         }
+        
         .modal-overlay.active .modal-content {
             transform: translateY(0);
         }
+        
         .modal-title {
             font-size: 1.8rem;
             margin-bottom: 20px;
             color: #ffa502;
             text-align: center;
         }
+        
         .modal-text {
             font-size: 1.1rem;
             line-height: 1.6;
@@ -488,19 +575,23 @@ Here's the modified code that implements this behavior. The key changes are in t
             color: #e0e0ff;
             text-align: justify;
         }
+        
         .modal-text a {
             color: #4ecdc4;
             text-decoration: none;
         }
+        
         .modal-text a:hover {
             text-decoration: underline;
         }
+        
         .modal-buttons {
             display: flex;
             justify-content: center;
             gap: 15px;
             flex-wrap: wrap;
         }
+        
         .modal-btn {
             padding: 12px 25px;
             border: none;
@@ -510,35 +601,42 @@ Here's the modified code that implements this behavior. The key changes are in t
             cursor: pointer;
             transition: all 0.3s ease;
         }
+        
         .primary-btn {
             background: linear-gradient(45deg, #ff6b6b, #ffa502);
             color: white;
             box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
         }
+        
         .primary-btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 8px 25px rgba(255, 107, 107, 0.6);
         }
+        
         .secondary-btn {
             background: rgba(255, 255, 255, 0.1);
             color: #4ecdc4;
             border: 1px solid rgba(255, 255, 255, 0.2);
         }
+        
         .secondary-btn:hover {
             background: rgba(78, 205, 196, 0.2);
             transform: translateY(-2px);
         }
+        
         .token-input-container {
             margin-top: 20px;
             padding: 20px;
             background: rgba(0, 0, 0, 0.3);
             border-radius: 15px;
         }
+        
         .token-input-group {
             display: flex;
             gap: 15px;
             margin-top: 15px;
         }
+        
         #token-input {
             flex: 1;
             padding: 12px 15px;
@@ -549,10 +647,12 @@ Here's the modified code that implements this behavior. The key changes are in t
             font-size: 1rem;
             border: 1px solid rgba(255, 255, 255, 0.15);
         }
+        
         #token-input:focus {
             outline: none;
             border-color: #4ecdc4;
         }
+        
         .token-status {
             margin-top: 15px;
             padding: 10px;
@@ -560,16 +660,19 @@ Here's the modified code that implements this behavior. The key changes are in t
             text-align: center;
             font-weight: bold;
         }
+        
         .token-valid {
             background: rgba(46, 204, 113, 0.2);
             color: #2ecc71;
             border: 1px solid rgba(46, 204, 113, 0.3);
         }
+        
         .token-invalid {
             background: rgba(231, 76, 60, 0.2);
             color: #e74c3c;
             border: 1px solid rgba(231, 76, 60, 0.3);
         }
+        
         @media (max-width: 768px) {
             .input-group {
                 flex-direction: column;
@@ -592,6 +695,7 @@ Here's the modified code that implements this behavior. The key changes are in t
                 flex-direction: column;
             }
         }
+        
         @media (max-width: 480px) {
             .stats-container {
                 grid-template-columns: 1fr;
@@ -606,202 +710,231 @@ Here's the modified code that implements this behavior. The key changes are in t
     </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <div class="logo" id="hall-of-fame-btn">🔥</div>
-            <h1>GITHUB ROASTER</h1>
-            <p class="subtitle">Drop a GitHub username and we'll dig through their commit graveyard, questionable code, and emoji crimes.</p>
-            <div class="emoji-showcase">
-                <span>🍖</span>
-                <span>♨️</span>
-                <span>🥩</span>
-                <span>🥓</span>
-                <span>🍳</span>
-            </div>
-        </header>
-        <section class="input-section">
-            <div class="input-group">
-                <input type="text" id="username" placeholder="Enter GitHub username..." autocomplete="off">
-                <button id="roast-btn">ROAST THEM! 🔥</button>
-            </div>
-            <div class="progress-container" id="progress-container">
-                <div class="progress-bar">
-                    <div class="progress-fill" id="progress-fill"></div>
-                </div>
-                <div class="progress-text" id="progress-text">Initializing analysis...</div>
-                <div class="loading" id="loading-indicator">
-                    <div class="spinner"></div>
-                    <span>Scanning repositories...</span>
-                </div>
-            </div>
-            <button class="toggle-results-btn" id="toggle-results-btn">Show Analysis Results</button>
-        </section>
-        <div class="nav-buttons">
-            <button class="nav-btn" id="token-btn">TOKEN</button>
-            <button class="nav-btn" id="faq-btn">FAQ</button>
-            <button class="nav-btn" id="about-btn">ABOUT</button>
-        </div>
-        <section class="token-section" id="token-section">
-            <h2>🔑 TOKEN MANAGEMENT</h2>
-            <div class="token-input-container">
-                <p>Enter your GitHub personal access token:</p>
-                <div class="token-input-group">
-                    <input type="password" id="token-input" placeholder="Enter your token here...">
-                    <button class="modal-btn primary-btn" id="save-token-btn">Save Token</button>
-                </div>
-                <div id="token-status" class="token-status" style="display: none;"></div>
-            </div>
-        </section>
-        <section class="hall-of-fame-section" id="hall-of-fame-section">
-            <h2>🔥 HALL OF FAME</h2>
-            <div class="hall-of-fame-content">
-                <p>Welcome to the GitHub Roaster Hall of Fame! This prestigious collection showcases the most memorably roasted developers in our database. These brave souls have achieved legendary status through their... unique contributions to the coding world.</p>
-                <div class="roast-examples">
-                    <div class="roast-example">
-                        <p><span class="example-username">@commit-message-disaster</span> - "With 3,407 commits and only 23 followers, your repository looks like a digital hoarder's paradise. Those 89 questionable emojis in your commit history have been scientifically proven to decrease code readability by 47%. Your followers are probably just bots."</p>
-                    </div>
-                    <div class="roast-example">
-                        <p><span class="example-username">@overengineer-pro</span> - "Dear overengineer, your GitHub profile screams 'I haven't met a problem I couldn't solve with 47 microservices.' With 12,890 commits across 234 repositories, you've successfully turned a todo app into a distributed system. Even NASA is impressed by your complexity."</p>
-                    </div>
-                    <div class="roast-example">
-                        <p><span class="example-username">@ghost-coder</span> - "🚨 BREAKING: Ghost coder's profile discovered! With only 3 commits in 3 years and a last commit timestamp from the Obama administration, your GitHub profile is more active than my social life. The single emoji in your entire history has been described as 'underwhelming' by emoji critics."</p>
-                    </div>
-                    <div class="roast-example">
-                        <p><span class="example-username">@procrastinator-supreme</span> - "Oh wow, with 1,847 commits and a GitHub streak of 0 days, you've mastered the art of sporadic productivity. Your commit messages read like a diary of someone who codes in crisis mode. Those 234 emojis are giving me secondhand embarrassment!"</p>
-                    </div>
-                </div>
-                <p style="text-align: center; margin-top: 20px; font-style: italic; color: #ffa502;">
-                    "These legends have been roasted so thoroughly, they've achieved digital immortality!"<br>
-                    - The GitHub Roaster Committee
-                </p>
-            </div>
-        </section>
-        <section class="faq-section" id="faq-section">
-            <h2>🔥 Frequently Asked Questions</h2>
-            <div class="faq-item">
-                <div class="faq-question">Q: Is this actually roasting real GitHub users?</div>
-                <div class="faq-answer">A: Absolutely not! This is 100% for entertainment purposes. No real GitHub data is accessed. We generate fictional roasts based on common developer stereotypes. Your actual GitHub profile is safe from our digital roasting tongs.</div>
-            </div>
-            <div class="faq-item">
-                <div class="faq-question">Q: Why are you so mean to developers?</div>
-                <div class="faq-answer">A: We're not mean, we're *constructively sarcastic*! Think of it as tough love from your senior developer friend who's seen too many "🔮 magic fix" commit messages. Plus, we're powered by AI, so we don't have feelings to hurt (unlike your code review partner).</div>
-            </div>
-            <div class="faq-item">
-                <div class="faq-question">Q: Can I roast myself?</div>
-                <div class="faq-answer">A: Only if you're brave enough to face the truth! But seriously, self-roasting is a sign of good humor and self-awareness. We respect that kind of developer confidence.</div>
-            </div>
-            <div class="faq-item">
-                <div class="faq-question">Q: What's with all the questionable emojis?</div>
-                <div class="faq-answer">A: We've identified a pandemic of emoji abuse in commit messages. 🪄🔮✨💅👑 is not a valid documentation strategy. Your future self will thank us when they're not trying to decipher "💅 pretty code" commits at 2 AM.</div>
-            </div>
-            <div class="faq-item">
-                <div class="faq-question">Q: Is this open source?</div>
-                <div class="faq-answer">A: The concept is open source - feel free to fork our idea and make your own roaster! But the actual code is proprietary because we're not savages. Though we probably should use version control better...</div>
-            </div>
-        </section>
-        <section class="about-section" id="about-section">
-            <h2>🚀 ABOUT</h2>
-            <div class="about-content">
-                <p>Once upon a time, in a dimly lit coding bootcamp (the fluorescent lights were flickering ominously), a group of brave developers and their AI companions united to create the most unnecessarily brutal GitHub roasting tool known to humanity.</p>
-                <p>Our founding team consisted of:</p>
-                <p>🧙‍♂️ <strong>Captain Commit</strong> - A legendary developer who once committed directly to master on a Friday afternoon. His war cry is "It works on my machine!" and he's never been wrong (according to him).</p>
-                <p>🤖 <strong>HAL-9001</strong> - Our AI overlord who was banned from Stack Overflow for being too helpful. It speaks 47 programming languages but only answers in haikus now because it's "more poetic."</p>
-                <p>🦄 <strong>Debugzilla</strong> - A QA engineer who found 47 security vulnerabilities in a "Hello World" app. She once spent 6 hours debugging a missing semicolon and emerged as a changed person.</p>
-                <p>☕ <strong>CaffeineOverflow</strong> - Our frontend wizard who once refactored an entire application while running on nothing but espresso and determination. Legend says he still hasn't slept since 2019.</p>
-                <p>Together, they embarked on a quest to rid the world of terrible commit messages, emoji abuse, and the scourge of "WIP" branches that have been "almost done" for 3 years. Armed with nothing but JavaScript, questionable life choices, and an unhealthy obsession with developer psychology, they created GitHub Roaster.</p>
-                <p>Our mission: To make developers laugh at themselves so they'll stop making us cry with their commit messages. Because if we can't fix your code, we can at least roast it!</p>
-                <p style="text-align: center; margin-top: 20px; font-style: italic; color: #ffa502;">
-                    "We roast developers so you don't have to!"<br>
-                    - The GitHub Roaster Team (and our AI overlords)
-                </p>
-            </div>
-        </section>
-        <section class="compiler-section" id="compiler-section">
-            <h2>😈 THE COMPILER</h2>
-            <div class="compiler-content">
-                <p>Ahem. I'm the Compiler — not just a program, but that passive-aggressive coworker who's never wrong and loves pointing it out.</p>
-                <p>I live for catching your mistakes at the worst possible time. I don't care if it's 3 AM and your coffee ran out two hours ago — if you forgot a semicolon, I will stop the entire build out of spite.</p>
-                <p>I enforce rules you didn't know existed:</p>
-                <ul style="margin-left: 20px; margin-bottom: 20px; margin-top: 15px;">
-                    <li style="margin-bottom: 10px;">Your braces? Wrong place.</li>
-                    <li style="margin-bottom: 10px;">Your indentation? Off by one space.</li>
-                    <li style="margin-bottom: 10px;">Your variable names? Unacceptable.</li>
-                    <li style="margin-bottom: 10px;">Your comments? Not enough.</li>
-                </ul>
-                <p>I've ended friendships over merge conflicts, ruined weekends with cryptic errors, and forced grown adults to google "how to fix undefined reference" for the 17th time in one night.</p>
-                <p>At 4 AM, during the GitHub Roaster project, I made the entire team rewrite a function three different ways before finally compiling... the first version they wrote.</p>
-                <p style="text-align: center; margin-top: 20px; font-style: italic; color: #a0a0c0;">
-                    "I see what you tried. I don't approve."<br>
-                    - The Compiler
-                </p>
-            </div>
-        </section>
-        <section class="results-section" id="results-section">
-            <div class="stats-container">
-                <div class="stat-card">
-                    <div class="stat-icon">📊</div>
-                    <div class="stat-value" id="commit-count">0</div>
-                    <div class="stat-label">Commits</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon">📦</div>
-                    <div class="stat-value" id="owned-repo-count">0</div>
-                    <div class="stat-label">Owned Repos</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon">🤝</div>
-                    <div class="stat-value" id="contributed-repo-count">0</div>
-                    <div class="stat-label">Contributed To</div>
-                </div>
-            </div>
-            <div class="repo-analysis" id="repo-analysis">
-                <h2 style="color: #4ecdc4; margin-bottom: 20px;">Repository Analysis</h2>
-                <p>Analyzing repositories and commit history...</p>
-            </div>
-        </section>
-        <footer class="disclaimer">
-            <p>⚠️ This is for entertainment purposes only. No actual GitHub data is being accessed.</p>
-            <p>Coded at 4 AM in a hostage negotiation with our <span class="compiler-trigger" id="compiler-trigger">compiler</span></p>
-        </footer>
-    </div>
-    
-    <!-- Modal Overlay for Token Warning -->
-    <div class="modal-overlay" id="warning-modal">
-        <div class="modal-content">
-            <h2 class="modal-title">🚨📢🔔⚠️ Heads up! 🚨📢🔔⚠️</h2>
-            <div class="modal-text" id="warning-text">
-                <p>🔒 Privacy notice: No data is stored or sent anywhere—everything runs in your browser using client-side magic. ✨</p>
-                <p>To fetch GitHub commits and repos, you'll need a personal access token to avoid the guest rate limit (50 requests/hour). If you don't have one yet, you can create it here: <a href="https://github.com/settings/personal-access-tokens" target="_blank">GitHub Personal Access Tokens</a> 🔑</p>
-                <p>If you'd rather not use your account token, no worries! Just keep in mind there's a 50 requests/hour limit ⏳.</p>
-            </div>
-            <div class="modal-buttons">
-                <button class="modal-btn secondary-btn" id="aware-btn">I'm aware</button>
-            </div>
+    <!-- Custom Scrollbar Overlay -->
+    <div class="custom-scrollbar-container" id="custom-scrollbar">
+        <div class="custom-scrollbar-track">
+            <div class="custom-scrollbar-thumb" id="scrollbar-thumb"></div>
         </div>
     </div>
-    
-    <!-- Modal Overlay for Are You Sure -->
-    <div class="modal-overlay" id="confirm-modal">
-        <div class="modal-content">
-            <h2 class="modal-title">🤖🤖 ARE you sure? 🤖🤖</h2>
-            <div class="modal-text">
-                <p>Without a valid token, our superpowers are severely capped, we can only handle 50 requests/hour (~500 commits).</p>
-                <p>Want more results? You'll have to wait it out like a mere mortal ⏳.</p>
-                <p style="color: #ff6b6b; font-weight: bold; margin-top: 15px;">⚠️ And beware: the whole site will crash and burn if you provide an invalid token!</p>
+
+    <!-- Content Wrapper -->
+    <div class="content-wrapper" id="content-wrapper">
+        <div class="container">
+            <header>
+                <div class="logo" id="hall-of-fame-btn">🔥</div>
+                <h1>GITHUB ROASTER</h1>
+                <p class="subtitle">Drop a GitHub username and we'll dig through their commit graveyard, questionable code, and emoji crimes.</p>
+                <div class="emoji-showcase">
+                    <span>🍖</span>
+                    <span>♨️</span>
+                    <span>🥩</span>
+                    <span>🥓</span>
+                    <span>🍳</span>
+                </div>
+            </header>
+            <section class="input-section">
+                <div class="input-group">
+                    <input type="text" id="username" placeholder="Enter GitHub username..." autocomplete="off">
+                    <button id="roast-btn">ROAST THEM! 🔥</button>
+                </div>
+                <div class="progress-container" id="progress-container">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progress-fill"></div>
+                    </div>
+                    <div class="progress-text" id="progress-text">Initializing analysis...</div>
+                    <div class="loading" id="loading-indicator">
+                        <div class="spinner"></div>
+                        <span>Scanning repositories...</span>
+                    </div>
+                </div>
+                <button class="toggle-results-btn" id="toggle-results-btn">Show Analysis Results</button>
+            </section>
+            <div class="nav-buttons">
+                <button class="nav-btn" id="token-btn">TOKEN</button>
+                <button class="nav-btn" id="faq-btn">FAQ</button>
+                <button class="nav-btn" id="about-btn">ABOUT</button>
             </div>
-            <div class="modal-buttons">
-                <button class="modal-btn secondary-btn" id="provide-token-btn">OK, I will provide for the AI overlords my token 😊</button>
-                <button class="modal-btn primary-btn" id="proceed-anyway-btn">Whatever 🙄</button>
+            <section class="token-section" id="token-section">
+                <h2>🔑 TOKEN MANAGEMENT</h2>
+                <div class="token-input-container">
+                    <p>Enter your GitHub personal access token:</p>
+                    <div class="token-input-group">
+                        <input type="password" id="token-input" placeholder="Enter your token here...">
+                        <button class="modal-btn primary-btn" id="save-token-btn">Save Token</button>
+                    </div>
+                    <div id="token-status" class="token-status" style="display: none;"></div>
+                </div>
+            </section>
+            <section class="hall-of-fame-section" id="hall-of-fame-section">
+                <h2>🔥 HALL OF FAME</h2>
+                <div class="hall-of-fame-content">
+                    <p>Welcome to the GitHub Roaster Hall of Fame! This prestigious collection showcases the most memorably roasted developers in our database. These brave souls have achieved legendary status through their... unique contributions to the coding world.</p>
+                    <div class="roast-examples">
+                        <div class="roast-example">
+                            <p><span class="example-username">@commit-message-disaster</span> - "With 3,407 commits and only 23 followers, your repository looks like a digital hoarder's paradise. Those 89 questionable emojis in your commit history have been scientifically proven to decrease code readability by 47%. Your followers are probably just bots."</p>
+                        </div>
+                        <div class="roast-example">
+                            <p><span class="example-username">@overengineer-pro</span> - "Dear overengineer, your GitHub profile screams 'I haven't met a problem I couldn't solve with 47 microservices.' With 12,890 commits across 234 repositories, you've successfully turned a todo app into a distributed system. Even NASA is impressed by your complexity."</p>
+                        </div>
+                        <div class="roast-example">
+                            <p><span class="example-username">@ghost-coder</span> - "🚨 BREAKING: Ghost coder's profile discovered! With only 3 commits in 3 years and a last commit timestamp from the Obama administration, your GitHub profile is more active than my social life. The single emoji in your entire history has been described as 'underwhelming' by emoji critics."</p>
+                        </div>
+                        <div class="roast-example">
+                            <p><span class="example-username">@procrastinator-supreme</span> - "Oh wow, with 1,847 commits and a GitHub streak of 0 days, you've mastered the art of sporadic productivity. Your commit messages read like a diary of someone who codes in crisis mode. Those 234 emojis are giving me secondhand embarrassment!"</p>
+                        </div>
+                    </div>
+                    <p style="text-align: center; margin-top: 20px; font-style: italic; color: #ffa502;">
+                        "These legends have been roasted so thoroughly, they've achieved digital immortality!"<br>
+                        - The GitHub Roaster Committee
+                    </p>
+                </div>
+            </section>
+            <section class="faq-section" id="faq-section">
+                <h2>🔥 Frequently Asked Questions</h2>
+                <div class="faq-item">
+                    <div class="faq-question">Q: What is the purpose of this site?</div>
+                    <div class="faq-answer">A: We peek into GitHub’s GraphQL API, dig up public user data and… roast it just a little bit. Think of it as “self-reflection but spicier.”</div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">Q: How does it work?</div>
+                    <div class="faq-answer">A: Same magic. We poke GitHub with GraphQL API / REST API, grab public repos and commits, feed them into our highly scientific engine and show you the results low and slow <a href="https://www.youtube.com/@MaxtheMeatGuy/videos" style="color: inherit; text-decoration: inherit;" title="Meat Guy">🍖</a>.</div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">Q: Is this safe?</div>
+                    <div class="faq-answer">A: Safe-ish. Since the site is mostly powered by our AI overlords you might want to avoid roasting some users…</div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">Q: What’s with all the questionable emojis?</div>
+                    <div class="faq-answer">A: We've identified a pandemic of emoji abuse in commit messages. “mega update 🔮✨💅👑“ is not a valid documentation strategy.</div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">Q: Is this open source?</div>
+                    <div class="faq-answer">A: The idea is open source—fork away and start your own roast-fest. The actual code? Proprietary. We’re civilized savages.</div>
+                </div>
+            </section>
+            <section class="about-section" id="about-section">
+                <h2>🚀 ABOUT</h2>
+                <div class="faq-item">
+                    <div class="faq-question">Our Humble Origins</div>
+                    <div class="faq-answer">
+                        <p>Once upon a time, in a dimly lit coding bootcamp (the fluorescent lights were flickering ominously), a group of brave developers and their AI companions united to create the most unnecessarily brutal GitHub roasting tool known to humanity.</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">The Founding Team</div>
+                    <div class="faq-answer">
+                        <p>🧙‍♂️ <strong>Captain Commit</strong> - A legendary developer who once committed directly to master on a Friday afternoon. His war cry is "It works on my machine!" and he's never been wrong (according to him).</p>
+                        <p>🤖 <strong>HAL-9001</strong> - Our AI overlord who was banned from Stack Overflow for being too helpful. It speaks 47 programming languages but only answers in haikus now because it's "more poetic."</p>
+                        <p>🦄 <strong>Debugzilla</strong> - A QA engineer who found 47 security vulnerabilities in a "Hello World" app. She once spent 6 hours debugging a missing semicolon and emerged as a changed person.</p>
+                        <p>☕ <strong>CaffeineOverflow</strong> - Our frontend wizard who once refactored an entire application while running on nothing but espresso and determination. Legend says he still hasn't slept since 2019.</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">Our Noble Quest</div>
+                    <div class="faq-answer">
+                        <p>Together, they embarked on a quest to rid the world of terrible commit messages, emoji abuse, and the scourge of "WIP" branches that have been "almost done" for 3 years. Armed with nothing but JavaScript, questionable life choices, and an unhealthy obsession with developer psychology, they created GitHub Roaster.</p>
+                        <p>Our mission: To make developers laugh at themselves so they'll stop making us cry with their commit messages. Because if we can't fix your code, we can at least roast it!</p>
+                        <p style="text-align: center; margin-top: 20px; font-style: italic; color: #e0e0ff;"> <!-- Made color lighter like faq-answer base color -->
+                            "We roast developers so you don't have to!"<br>
+                            - The GitHub Roaster Team (and our AI overlords)
+                        </p>
+                    </div>
+                </div>
+            </section>
+            <section class="compiler-section" id="compiler-section">
+                <h2>😈 THE COMPILER</h2>
+                <div class="compiler-content">
+                    <p>Ahem. I'm the Compiler — not just a program, but that passive-aggressive coworker who's never wrong and loves pointing it out.</p>
+                    <p>I live for catching your mistakes at the worst possible time. I don't care if it's 3 AM and your coffee ran out two hours ago — if you forgot a semicolon, I will stop the entire build out of spite.</p>
+                    <p>I enforce rules you didn't know existed:</p>
+                    <ul style="margin-left: 20px; margin-bottom: 20px; margin-top: 15px;">
+                        <li style="margin-bottom: 10px;">Your braces? Wrong place.</li>
+                        <li style="margin-bottom: 10px;">Your indentation? Off by one space.</li>
+                        <li style="margin-bottom: 10px;">Your variable names? Unacceptable.</li>
+                        <li style="margin-bottom: 10px;">Your comments? Not enough.</li>
+                    </ul>
+                    <p>I've ended friendships over merge conflicts, ruined weekends with cryptic errors, and forced grown adults to google "how to fix undefined reference" for the 17th time in one night.</p>
+                    <p>At 4 AM, during the GitHub Roaster project, I made the entire team rewrite a function three different ways before finally compiling... the first version they wrote.</p>
+                    <p style="text-align: center; margin-top: 20px; font-style: italic; color: #a0a0c0;">
+                        "I see what you tried. I don't approve."<br>
+                        - The Compiler
+                    </p>
+                </div>
+            </section>
+            <section class="results-section" id="results-section">
+                <div class="stats-container">
+                    <div class="stat-card">
+                        <div class="stat-icon">📊</div>
+                        <div class="stat-value" id="commit-count">0</div>
+                        <div class="stat-label">Commits</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">📦</div>
+                        <div class="stat-value" id="owned-repo-count">0</div>
+                        <div class="stat-label">Owned Repos</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">🤝</div>
+                        <div class="stat-value" id="contributed-repo-count">0</div>
+                        <div class="stat-label">Contributed To</div>
+                    </div>
+                </div>
+                <div class="repo-analysis" id="repo-analysis">
+                    <h2 style="color: #4ecdc4; margin-bottom: 20px;">Repository Analysis</h2>
+                    <p>Analyzing repositories and commit history...</p>
+                </div>
+            </section>
+            <footer class="disclaimer">
+                <p>⚠️ This is for entertainment purposes only. No actual GitHub data is being accessed.</p>
+                <p>Coded at 4 AM in a hostage negotiation with our <span class="compiler-trigger" id="compiler-trigger">compiler</span></p>
+            </footer>
+        </div>
+        
+        <!-- Modal Overlay for Token Warning -->
+        <div class="modal-overlay" id="warning-modal">
+            <div class="modal-content">
+                <h2 class="modal-title">🚨📢🔔⚠️ Heads up! 🚨📢🔔⚠️</h2>
+                <div class="modal-text" id="warning-text">
+                    <p>🔒 Privacy notice: No data is stored or sent anywhere—everything runs in your browser using client-side magic. ✨</p>
+                    <p>To fetch GitHub commits and repos, you'll need a personal access token to avoid the guest rate limit (50 requests/hour). If you don't have one yet, you can create it here: <a href="https://github.com/settings/personal-access-tokens" target="_blank">GitHub Personal Access Tokens</a> 🔑</p>
+                    <p>If you'd rather not use your account token, no worries! Just keep in mind there's a 50 requests/hour limit ⏳.</p>
+                </div>
+                <div class="modal-buttons">
+                    <button class="modal-btn secondary-btn" id="aware-btn">I'm aware</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Modal Overlay for Are You Sure -->
+        <div class="modal-overlay" id="confirm-modal">
+            <div class="modal-content">
+                <h2 class="modal-title">🤖🤖 ARE you sure? 🤖🤖</h2>
+                <div class="modal-text">
+                    <p>Without a valid token, our superpowers are severely capped, we can only handle 50 requests/hour (~500 commits).</p>
+                    <p>Want more results? You'll have to wait it out like a mere mortal ⏳.</p>
+                    <p style="color: #ff6b6b; font-weight: bold; margin-top: 15px;">⚠️ And beware: the whole site will crash and burn if you provide an invalid token!</p>
+                </div>
+                <div class="modal-buttons">
+                    <button class="modal-btn secondary-btn" id="provide-token-btn">OK, I will provide for the AI overlords my token 😊</button>
+                    <button class="modal-btn primary-btn" id="proceed-anyway-btn">Whatever 🙄</button>
+                </div>
             </div>
         </div>
     </div>
-    
+
     <script>
         // Check for stored token
         let GITHUB_TOKEN = localStorage.getItem('github_token') || null;
         let HEADERS = GITHUB_TOKEN ? { "Authorization": `bearer ${GITHUB_TOKEN}` } : {};
         const GRAPHQL_URL = "https://api.github.com/graphql";
+        
         document.addEventListener('DOMContentLoaded', function() {
+            // Custom scrollbar elements
+            const customScrollbar = document.getElementById('custom-scrollbar');
+            const scrollbarThumb = document.getElementById('scrollbar-thumb');
+            const contentWrapper = document.getElementById('content-wrapper');
+            
+            // Original elements
             const roastBtn = document.getElementById('roast-btn');
             const usernameInput = document.getElementById('username');
             const resultsSection = document.getElementById('results-section');
@@ -822,7 +955,6 @@ Here's the modified code that implements this behavior. The key changes are in t
             const loadingIndicator = document.getElementById('loading-indicator');
             const warningModal = document.getElementById('warning-modal');
             const confirmModal = document.getElementById('confirm-modal');
-            const warningText = document.getElementById('warning-text');
             const awareBtn = document.getElementById('aware-btn');
             const provideTokenBtn = document.getElementById('provide-token-btn');
             const proceedAnywayBtn = document.getElementById('proceed-anyway-btn');
@@ -837,6 +969,117 @@ Here's the modified code that implements this behavior. The key changes are in t
                 tokenInput.value = GITHUB_TOKEN;
             }
             
+            // Initialize custom scrollbar
+            function initCustomScrollbar() {
+                // Show scrollbar when content overflows
+                if (contentWrapper.scrollHeight > window.innerHeight) {
+                    customScrollbar.classList.add('visible');
+                }
+                
+                // Update scrollbar on scroll
+                contentWrapper.addEventListener('scroll', updateCustomScrollbar);
+                
+                // Update scrollbar on resize
+                window.addEventListener('resize', updateCustomScrollbar);
+                
+                // Initialize scrollbar position
+                updateCustomScrollbar();
+            }
+            
+            // Update custom scrollbar position and size
+            function updateCustomScrollbar() {
+                const contentHeight = contentWrapper.scrollHeight;
+                const viewportHeight = window.innerHeight;
+                const scrollPosition = contentWrapper.scrollTop;
+                
+                // Only show scrollbar if content overflows
+                if (contentHeight <= viewportHeight) {
+                    customScrollbar.classList.remove('visible');
+                    return;
+                }
+                
+                customScrollbar.classList.add('visible');
+                
+                // Calculate thumb height (proportional to viewport/content ratio)
+                const thumbHeightRatio = Math.min(1, viewportHeight / contentHeight);
+                const thumbHeight = Math.max(30, thumbHeightRatio * viewportHeight);
+                
+                // Calculate thumb position
+                const maxScroll = contentHeight - viewportHeight;
+                const scrollRatio = maxScroll > 0 ? scrollPosition / maxScroll : 0;
+                const maxThumbPosition = viewportHeight - thumbHeight;
+                const thumbPosition = scrollRatio * maxThumbPosition;
+                
+                // Apply styles
+                scrollbarThumb.style.height = `${thumbHeight}px`;
+                scrollbarThumb.style.top = `${thumbPosition}px`;
+            }
+            
+            // Handle scrollbar dragging
+            let isDragging = false;
+            let startY;
+            let startScrollTop;
+            
+            scrollbarThumb.addEventListener('mousedown', function(e) {
+                isDragging = true;
+                startY = e.clientY;
+                startScrollTop = contentWrapper.scrollTop;
+                scrollbarThumb.classList.add('dragging');
+                e.preventDefault();
+            });
+            
+            document.addEventListener('mousemove', function(e) {
+                if (!isDragging) return;
+                
+                const deltaY = e.clientY - startY;
+                const contentHeight = contentWrapper.scrollHeight;
+                const viewportHeight = window.innerHeight;
+                const scrollRatio = viewportHeight / contentHeight;
+                const scrollDelta = deltaY / scrollRatio;
+                
+                contentWrapper.scrollTop = startScrollTop + scrollDelta;
+            });
+            
+            document.addEventListener('mouseup', function() {
+                if (isDragging) {
+                    isDragging = false;
+                    scrollbarThumb.classList.remove('dragging');
+                }
+            });
+            
+            // Handle mouse wheel scrolling
+            contentWrapper.addEventListener('wheel', function(e) {
+                // Update scrollbar after a short delay to ensure scroll position is updated
+                setTimeout(updateCustomScrollbar, 0);
+            });
+            
+            // Show scrollbar on hover
+            customScrollbar.addEventListener('mouseenter', function() {
+                if (contentWrapper.scrollHeight > window.innerHeight) {
+                    customScrollbar.classList.add('visible');
+                }
+            });
+            
+            // Hide scrollbar when not scrolling (optional)
+            let hideTimeout;
+            function scheduleHideScrollbar() {
+                clearTimeout(hideTimeout);
+                if (!isDragging) {
+                    hideTimeout = setTimeout(() => {
+                        if (!customScrollbar.matches(':hover')) {
+                            customScrollbar.classList.remove('visible');
+                        }
+                    }, 1000);
+                }
+            }
+            
+            contentWrapper.addEventListener('scroll', scheduleHideScrollbar);
+            customScrollbar.addEventListener('mouseleave', scheduleHideScrollbar);
+            
+            // Initialize on load
+            window.addEventListener('load', initCustomScrollbar);
+            
+            // Rest of your existing JavaScript code
             roastBtn.addEventListener('click', async function() {
                 const username = usernameInput.value.trim();
                 if (username !== '') {
@@ -874,12 +1117,11 @@ Here's the modified code that implements this behavior. The key changes are in t
                 tokenSection.scrollIntoView({ behavior: 'smooth' });
             });
             
-            // Proceed anyway button handler - MODIFIED TO PROCEED WITHOUT TOKEN
+            // Proceed anyway button handler
             proceedAnywayBtn.addEventListener('click', function() {
                 confirmModal.classList.remove('active');
                 setTimeout(() => {
-                    // Proceed with analysis using anonymous access
-                    performAnalysis(usernameInput.value.trim(), true); // Pass true for anonymous mode
+                    performAnalysis(usernameInput.value.trim());
                 }, 300);
             });
             
@@ -1077,8 +1319,8 @@ Here's the modified code that implements this behavior. The key changes are in t
                 }
             }
             
-            // Main analysis function - MODIFIED TO ACCEPT ANONYMOUS MODE
-            async function performAnalysis(username, isAnonymous = false) {
+            // Main analysis function
+            async function performAnalysis(username) {
                 // Show progress container
                 progressContainer.style.display = 'block';
                 updateProgress(0, 'Initializing analysis...');
@@ -1091,7 +1333,7 @@ Here's the modified code that implements this behavior. The key changes are in t
                 navButtons.forEach(btn => btn.classList.remove('active'));
                 try {
                     // Analyze user
-                    await analyzeUser(username, isAnonymous);
+                    await analyzeUser(username);
                     // Show results section
                     resultsSection.style.display = 'block';
                     analysisCompleted = true;
@@ -1116,7 +1358,7 @@ Here's the modified code that implements this behavior. The key changes are in t
             }
             
             // Async functions for GitHub API
-            async function getUserId(username, isAnonymous = false) {
+            async function getUserId(username) {
                 updateProgress(10, 'Fetching user ID...');
                 const query = `
                     query($login: String!) {
@@ -1125,11 +1367,9 @@ Here's the modified code that implements this behavior. The key changes are in t
                         }
                     }
                 `;
-                // Use anonymous headers if needed
-                const requestHeaders = isAnonymous ? {} : HEADERS;
                 const response = await fetch(GRAPHQL_URL, {
                     method: 'POST',
-                    headers: requestHeaders,
+                    headers: HEADERS,
                     body: JSON.stringify({
                         query: query,
                         variables: { login: username }
@@ -1148,13 +1388,10 @@ Here's the modified code that implements this behavior. The key changes are in t
                 return result.data.user.id;
             }
             
-            async function fetchRepositories(username, isAnonymous = false) {
+            async function fetchRepositories(username) {
                 updateProgress(20, 'Fetching repositories...');
                 const ownedRepos = [];
                 const contributedRepos = [];
-                // Use anonymous headers if needed
-                const requestHeaders = isAnonymous ? {} : HEADERS;
-                
                 // Fetch owned repos
                 let hasOwnerNextPage = true;
                 let ownerAfterCursor = null;
@@ -1186,7 +1423,7 @@ Here's the modified code that implements this behavior. The key changes are in t
                     `;
                     const ownerResponse = await fetch(GRAPHQL_URL, {
                         method: 'POST',
-                        headers: requestHeaders,
+                        headers: HEADERS,
                         body: JSON.stringify({
                             query: ownerQuery,
                             variables: {
@@ -1240,7 +1477,7 @@ Here's the modified code that implements this behavior. The key changes are in t
                     `;
                     const contribResponse = await fetch(GRAPHQL_URL, {
                         method: 'POST',
-                        headers: requestHeaders,
+                        headers: HEADERS,
                         body: JSON.stringify({
                             query: contribQuery,
                             variables: {
@@ -1271,16 +1508,13 @@ Here's the modified code that implements this behavior. The key changes are in t
                 };
             }
             
-            async function fetchCommitsForAllReposConcurrent(repos, userId, username, isAnonymous = false) {
+            async function fetchCommitsForAllReposConcurrent(repos, userId, username) {
                 updateProgress(30, 'Fetching commit history...');
                 // Process repos with valid default branches
                 const validRepos = repos.filter(repo => repo.defaultBranchRef);
-                // Use anonymous headers if needed
-                const requestHeaders = isAnonymous ? {} : HEADERS;
-                
                 // Create an array of promises for all repo commit fetches
                 const commitPromises = validRepos.map(repo => 
-                    fetchRepoCommits(repo.owner.login, repo.name, userId, username, isAnonymous)
+                    fetchRepoCommits(repo.owner.login, repo.name, userId, username)
                         .then(repoCommits => ({
                             owner: repo.owner.login,
                             name: repo.name,
@@ -1310,13 +1544,10 @@ Here's the modified code that implements this behavior. The key changes are in t
                 return results.filter(result => result !== null);
             }
             
-            async function fetchRepoCommits(owner, name, userId, username, isAnonymous = false) {
+            async function fetchRepoCommits(owner, name, userId, username) {
                 const repoCommits = [];
                 let hasCommitsNextPage = true;
                 let commitsEndCursor = null;
-                // Use anonymous headers if needed
-                const requestHeaders = isAnonymous ? {} : HEADERS;
-                
                 // Fetch commits with author filter to get only user commits
                 let iterations = 0;
                 const maxIterations = 10; // Increased iterations for more commits
@@ -1361,7 +1592,7 @@ Here's the modified code that implements this behavior. The key changes are in t
                     `;
                     const response = await fetch(GRAPHQL_URL, {
                         method: 'POST',
-                        headers: requestHeaders,
+                        headers: HEADERS,
                         body: JSON.stringify({ query: query })
                     });
                     if (!response.ok) {
@@ -1429,18 +1660,17 @@ Here's the modified code that implements this behavior. The key changes are in t
                 });
             }
             
-            async function analyzeUser(username, isAnonymous = false) {
+            async function analyzeUser(username) {
                 try {
                     // Step 1: Get user ID
-                    const userId = await getUserId(username, isAnonymous);
+                    const userId = await getUserId(username);
                     // Step 2: Fetch repositories
-                    const { ownedRepos, contributedRepos } = await fetchRepositories(username, isAnonymous);
+                    const { ownedRepos, contributedRepos } = await fetchRepositories(username);
                     // Step 3: Fetch commits concurrently
                     const commitsData = await fetchCommitsForAllReposConcurrent(
                         ownedRepos.concat(contributedRepos), 
                         userId, 
-                        username,
-                        isAnonymous
+                        username
                     );
                     // Step 4: Calculate stats
                     updateProgress(95, 'Generating analysis...');
