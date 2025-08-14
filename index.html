@@ -1,3 +1,8 @@
+Okay, I understand. You want a version where if the user declines to provide a token (by clicking "Whatever 🙄"), the application proceeds with the analysis using anonymous/public access until it hits the GitHub API rate limit.
+
+Here's the modified code that implements this behavior. The key changes are in the `performAnalysis` function and the event handlers for the modals:
+
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -16,6 +21,34 @@
             color: #fff;
             min-height: 100vh;
             padding: 20px;
+            overflow-x: hidden;
+        }
+        /* ===== Scrollbar Styles ===== */
+        /* Chrome, Edge, Safari */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(45deg, #ff6b6b, #ffa502);
+            border-radius: 4px;
+            border: none;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(45deg, #ff5252, #ffb74d);
+        }
+        /* Remove scrollbar buttons */
+        ::-webkit-scrollbar-button {
+            display: none;
+        }
+        /* Firefox */
+        html {
+            scrollbar-width: thin;
+            scrollbar-color: #ff6b6b transparent;
         }
         .container {
             max-width: 800px;
@@ -194,6 +227,31 @@
             padding: 15px;
             margin-top: 15px;
         }
+        /* Commit list scrollbar */
+        .commit-list::-webkit-scrollbar {
+            width: 6px;
+        }
+        .commit-list::-webkit-scrollbar-track {
+            background: rgba(10, 15, 30, 0.3);
+            border-radius: 3px;
+            margin: 5px 0;
+        }
+        .commit-list::-webkit-scrollbar-thumb {
+            background: rgba(78, 205, 196, 0.6);
+            border-radius: 3px;
+        }
+        .commit-list::-webkit-scrollbar-thumb:hover {
+            background: rgba(78, 205, 196, 0.8);
+        }
+        /* Remove scrollbar buttons */
+        .commit-list::-webkit-scrollbar-button {
+            display: none;
+        }
+        /* Firefox scrollbar for commit list */
+        .commit-list {
+            scrollbar-width: thin;
+            scrollbar-color: #4ecdc4 rgba(10, 15, 30, 0.3);
+        }
         .commit-item {
             padding: 10px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
@@ -323,6 +381,7 @@
             padding: 15px;
             margin: 20px 0;
             display: none;
+            border: 1px solid rgba(255, 255, 255, 0.15);
         }
         .progress-bar {
             height: 8px;
@@ -381,42 +440,68 @@
         .results-section {
             display: none;
         }
-        .warning-widget {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 30px;
-            margin-bottom: 30px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-            text-align: center;
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
         }
-        .warning-title {
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-content {
+            background: rgba(30, 30, 50, 0.95);
+            backdrop-filter: blur(15px);
+            border-radius: 20px;
+            padding: 40px;
+            width: 90%;
+            max-width: 600px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            transform: translateY(20px);
+            transition: transform 0.3s ease;
+        }
+        .modal-overlay.active .modal-content {
+            transform: translateY(0);
+        }
+        .modal-title {
             font-size: 1.8rem;
             margin-bottom: 20px;
             color: #ffa502;
+            text-align: center;
         }
-        .warning-content {
+        .modal-text {
             font-size: 1.1rem;
             line-height: 1.6;
             margin-bottom: 25px;
             color: #e0e0ff;
             text-align: justify;
         }
-        .warning-content a {
+        .modal-text a {
             color: #4ecdc4;
             text-decoration: none;
         }
-        .warning-content a:hover {
+        .modal-text a:hover {
             text-decoration: underline;
         }
-        .warning-buttons {
+        .modal-buttons {
             display: flex;
             justify-content: center;
             gap: 15px;
             flex-wrap: wrap;
         }
-        .warning-btn {
+        .modal-btn {
             padding: 12px 25px;
             border: none;
             border-radius: 12px;
@@ -446,7 +531,7 @@
         .token-input-container {
             margin-top: 20px;
             padding: 20px;
-            background: rgba(0, 0, 0, 0.2);
+            background: rgba(0, 0, 0, 0.3);
             border-radius: 15px;
         }
         .token-input-group {
@@ -459,10 +544,10 @@
             padding: 12px 15px;
             border: none;
             border-radius: 8px;
-            background: rgba(0, 0, 0, 0.3);
+            background: rgba(0, 0, 0, 0.4);
             color: white;
             font-size: 1rem;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.15);
         }
         #token-input:focus {
             outline: none;
@@ -499,7 +584,7 @@
                 flex-direction: column;
                 align-items: center;
             }
-            .warning-buttons {
+            .modal-buttons {
                 flex-direction: column;
                 align-items: center;
             }
@@ -539,17 +624,6 @@
                 <input type="text" id="username" placeholder="Enter GitHub username..." autocomplete="off">
                 <button id="roast-btn">ROAST THEM! 🔥</button>
             </div>
-            <div class="warning-widget" id="warning-widget" style="display: none;">
-                <h2 class="warning-title">🚨📢🔔⚠️ Heads up! 🚨📢🔔⚠️</h2>
-                <div class="warning-content" id="warning-content">
-                    <p>🔒 Privacy notice: No data is stored or sent anywhere—everything runs in your browser using client-side magic. ✨</p>
-                    <p>To fetch GitHub commits and repos, you'll need a personal access token to avoid the guest rate limit (50 requests/hour). If you don't have one yet, you can create it here: <a href="https://github.com/settings/personal-access-tokens" target="_blank">GitHub Personal Access Tokens</a> 🔑</p>
-                    <p>If you'd rather not use your account token, no worries! Just keep in mind there's a 50 requests/hour limit ⏳.</p>
-                </div>
-                <div class="warning-buttons">
-                    <button class="warning-btn secondary-btn" id="aware-btn">I'm aware</button>
-                </div>
-            </div>
             <div class="progress-container" id="progress-container">
                 <div class="progress-bar">
                     <div class="progress-fill" id="progress-fill"></div>
@@ -573,7 +647,7 @@
                 <p>Enter your GitHub personal access token:</p>
                 <div class="token-input-group">
                     <input type="password" id="token-input" placeholder="Enter your token here...">
-                    <button class="warning-btn primary-btn" id="save-token-btn">Save Token</button>
+                    <button class="modal-btn primary-btn" id="save-token-btn">Save Token</button>
                 </div>
                 <div id="token-status" class="token-status" style="display: none;"></div>
             </div>
@@ -690,6 +764,38 @@
             <p>Coded at 4 AM in a hostage negotiation with our <span class="compiler-trigger" id="compiler-trigger">compiler</span></p>
         </footer>
     </div>
+    
+    <!-- Modal Overlay for Token Warning -->
+    <div class="modal-overlay" id="warning-modal">
+        <div class="modal-content">
+            <h2 class="modal-title">🚨📢🔔⚠️ Heads up! 🚨📢🔔⚠️</h2>
+            <div class="modal-text" id="warning-text">
+                <p>🔒 Privacy notice: No data is stored or sent anywhere—everything runs in your browser using client-side magic. ✨</p>
+                <p>To fetch GitHub commits and repos, you'll need a personal access token to avoid the guest rate limit (50 requests/hour). If you don't have one yet, you can create it here: <a href="https://github.com/settings/personal-access-tokens" target="_blank">GitHub Personal Access Tokens</a> 🔑</p>
+                <p>If you'd rather not use your account token, no worries! Just keep in mind there's a 50 requests/hour limit ⏳.</p>
+            </div>
+            <div class="modal-buttons">
+                <button class="modal-btn secondary-btn" id="aware-btn">I'm aware</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal Overlay for Are You Sure -->
+    <div class="modal-overlay" id="confirm-modal">
+        <div class="modal-content">
+            <h2 class="modal-title">🤖🤖 ARE you sure? 🤖🤖</h2>
+            <div class="modal-text">
+                <p>Without a valid token, our superpowers are severely capped, we can only handle 50 requests/hour (~500 commits).</p>
+                <p>Want more results? You'll have to wait it out like a mere mortal ⏳.</p>
+                <p style="color: #ff6b6b; font-weight: bold; margin-top: 15px;">⚠️ And beware: the whole site will crash and burn if you provide an invalid token!</p>
+            </div>
+            <div class="modal-buttons">
+                <button class="modal-btn secondary-btn" id="provide-token-btn">OK, I will provide for the AI overlords my token 😊</button>
+                <button class="modal-btn primary-btn" id="proceed-anyway-btn">Whatever 🙄</button>
+            </div>
+        </div>
+    </div>
+    
     <script>
         // Check for stored token
         let GITHUB_TOKEN = localStorage.getItem('github_token') || null;
@@ -714,87 +820,88 @@
             const progressFill = document.getElementById('progress-fill');
             const progressText = document.getElementById('progress-text');
             const loadingIndicator = document.getElementById('loading-indicator');
-            const warningWidget = document.getElementById('warning-widget');
-            const warningContent = document.getElementById('warning-content');
-            const warningButtons = document.querySelector('.warning-buttons');
+            const warningModal = document.getElementById('warning-modal');
+            const confirmModal = document.getElementById('confirm-modal');
+            const warningText = document.getElementById('warning-text');
             const awareBtn = document.getElementById('aware-btn');
+            const provideTokenBtn = document.getElementById('provide-token-btn');
+            const proceedAnywayBtn = document.getElementById('proceed-anyway-btn');
             const toggleResultsBtn = document.getElementById('toggle-results-btn');
             const tokenInput = document.getElementById('token-input');
             const saveTokenBtn = document.getElementById('save-token-btn');
             const tokenStatus = document.getElementById('token-status');
             let analysisCompleted = false;
+            
             // Load saved token if exists
             if (GITHUB_TOKEN) {
                 tokenInput.value = GITHUB_TOKEN;
             }
+            
             roastBtn.addEventListener('click', async function() {
                 const username = usernameInput.value.trim();
                 if (username !== '') {
                     // Check if we need to show the warning (no token stored)
                     if (!GITHUB_TOKEN) {
-                        warningWidget.style.display = 'block';
-                        warningWidget.scrollIntoView({ behavior: 'smooth' });
+                        warningModal.classList.add('active');
                         return;
                     }
                     // If we have a token, proceed with analysis
                     await performAnalysis(username);
                 }
             });
+            
             // Allow Enter key to trigger roast
             usernameInput.addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') {
                     roastBtn.click();
                 }
             });
+            
             // Aware button click handler
             awareBtn.addEventListener('click', function() {
-                // Update warning content
-                document.querySelector('.warning-title').textContent = '🤖🤖 ARE you sure? 🤖🤖';
-                warningContent.innerHTML = `
-                    <p>Without a valid token, our superpowers are severely capped, we can only handle 50 requests/hour (~500 commits).</p>
-                    <p>Want more results? You'll have to wait it out like a mere mortal ⏳.</p>
-                    <p style="color: #ff6b6b; font-weight: bold; margin-top: 15px;">⚠️ And beware: the whole site will crash and burn if you provide an invalid token!</p>
-                `;
-                // Update buttons
-                warningButtons.innerHTML = `
-                    <button class="warning-btn secondary-btn" id="provide-token-btn">OK, I will provide for the AI overlords my token 😊</button>
-                    <button class="warning-btn primary-btn" id="proceed-anyway-btn">Whatever 🙄</button>
-                `;
-                // Add event listeners to new buttons
-                document.getElementById('provide-token-btn').addEventListener('click', function() {
-                    // Show token input
-                    const tokenInputContainer = document.createElement('div');
-                    tokenInputContainer.className = 'token-input-container';
-                    tokenInputContainer.innerHTML = `
-                        <p>Enter your GitHub personal access token:</p>
-                        <div class="token-input-group">
-                            <input type="password" id="token-input-popup" placeholder="Enter your token here...">
-                            <button class="warning-btn primary-btn" id="save-token-popup-btn">Save Token</button>
-                        </div>
-                    `;
-                    warningWidget.appendChild(tokenInputContainer);
-                    // Add event listener to save token button
-                    document.getElementById('save-token-popup-btn').addEventListener('click', function() {
-                        const tokenInputPopup = document.getElementById('token-input-popup');
-                        const token = tokenInputPopup.value.trim();
-                        if (token) {
-                            localStorage.setItem('github_token', token);
-                            GITHUB_TOKEN = token;
-                            HEADERS = { "Authorization": `bearer ${GITHUB_TOKEN}` };
-                            // Hide warning widget and proceed
-                            warningWidget.style.display = 'none';
-                            performAnalysis(usernameInput.value.trim());
-                        } else {
-                            alert('Please enter a valid token');
-                        }
-                    });
-                });
-                document.getElementById('proceed-anyway-btn').addEventListener('click', function() {
-                    // Hide warning widget and proceed without token
-                    warningWidget.style.display = 'none';
-                    performAnalysis(usernameInput.value.trim());
-                });
+                warningModal.classList.remove('active');
+                setTimeout(() => {
+                    confirmModal.classList.add('active');
+                }, 300);
             });
+            
+            // Provide token button handler
+            provideTokenBtn.addEventListener('click', function() {
+                confirmModal.classList.remove('active');
+                // Show token input section
+                tokenSection.style.display = 'block';
+                tokenBtn.classList.add('active');
+                tokenSection.scrollIntoView({ behavior: 'smooth' });
+            });
+            
+            // Proceed anyway button handler - MODIFIED TO PROCEED WITHOUT TOKEN
+            proceedAnywayBtn.addEventListener('click', function() {
+                confirmModal.classList.remove('active');
+                setTimeout(() => {
+                    // Proceed with analysis using anonymous access
+                    performAnalysis(usernameInput.value.trim(), true); // Pass true for anonymous mode
+                }, 300);
+            });
+            
+            // Save token button functionality
+            saveTokenBtn.addEventListener('click', async function() {
+                const token = tokenInput.value.trim();
+                if (token) {
+                    // Test token validity
+                    const isValid = await testToken(token);
+                    if (isValid) {
+                        localStorage.setItem('github_token', token);
+                        GITHUB_TOKEN = token;
+                        HEADERS = { "Authorization": `bearer ${GITHUB_TOKEN}` };
+                        showTokenStatus('Token is valid and saved!', true);
+                    } else {
+                        showTokenStatus('Invalid token. Please check and try again.', false);
+                    }
+                } else {
+                    showTokenStatus('Please enter a token', false);
+                }
+            });
+            
             // Token button functionality
             tokenBtn.addEventListener('click', function() {
                 // Hide all other sections
@@ -816,24 +923,7 @@
                 }
                 tokenSection.scrollIntoView({ behavior: 'smooth' });
             });
-            // Save token button functionality
-            saveTokenBtn.addEventListener('click', async function() {
-                const token = tokenInput.value.trim();
-                if (token) {
-                    // Test token validity
-                    const isValid = await testToken(token);
-                    if (isValid) {
-                        localStorage.setItem('github_token', token);
-                        GITHUB_TOKEN = token;
-                        HEADERS = { "Authorization": `bearer ${GITHUB_TOKEN}` };
-                        showTokenStatus('Token is valid and saved!', true);
-                    } else {
-                        showTokenStatus('Invalid token. Please check and try again.', false);
-                    }
-                } else {
-                    showTokenStatus('Please enter a token', false);
-                }
-            });
+            
             // Hall of Fame button functionality (fire icon)
             hallOfFameBtn.addEventListener('click', function() {
                 // Hide all other sections except results
@@ -850,6 +940,7 @@
                 }
                 hallOfFameSection.scrollIntoView({ behavior: 'smooth' });
             });
+            
             // FAQ button functionality
             faqBtn.addEventListener('click', function() {
                 // Hide all other sections except results
@@ -869,6 +960,7 @@
                 }
                 faqSection.scrollIntoView({ behavior: 'smooth' });
             });
+            
             // About button functionality
             aboutBtn.addEventListener('click', function() {
                 // Hide all other sections except results
@@ -888,6 +980,7 @@
                 }
                 aboutSection.scrollIntoView({ behavior: 'smooth' });
             });
+            
             // Compiler trigger functionality (tiny hitbox)
             compilerTrigger.addEventListener('click', function(e) {
                 // Create a tiny hitbox by checking if click is within a small area
@@ -910,6 +1003,7 @@
                     compilerSection.scrollIntoView({ behavior: 'smooth' });
                 }
             });
+            
             // Also allow clicking the word with a visual hint on hover
             compilerTrigger.addEventListener('mousemove', function(e) {
                 const rect = compilerTrigger.getBoundingClientRect();
@@ -925,6 +1019,7 @@
                     compilerTrigger.style.cursor = 'pointer';
                 }
             });
+            
             // Toggle results button functionality
             toggleResultsBtn.addEventListener('click', function() {
                 if (resultsSection.style.display === 'none') {
@@ -935,11 +1030,13 @@
                     toggleResultsBtn.textContent = 'Show Analysis Results';
                 }
             });
+            
             // Progress update function
             function updateProgress(percent, message) {
                 progressFill.style.width = `${percent}%`;
                 progressText.textContent = message;
             }
+            
             // Token status display function
             function showTokenStatus(message, isValid) {
                 tokenStatus.textContent = message;
@@ -947,6 +1044,7 @@
                 tokenStatus.classList.add(isValid ? 'token-valid' : 'token-invalid');
                 tokenStatus.style.display = 'block';
             }
+            
             // Token validation function
             async function testToken(token) {
                 try {
@@ -968,6 +1066,7 @@
                     return false;
                 }
             }
+            
             // Check and display token status
             async function checkTokenStatus(token) {
                 const isValid = await testToken(token);
@@ -977,8 +1076,9 @@
                     showTokenStatus('Current token is invalid', false);
                 }
             }
-            // Main analysis function
-            async function performAnalysis(username) {
+            
+            // Main analysis function - MODIFIED TO ACCEPT ANONYMOUS MODE
+            async function performAnalysis(username, isAnonymous = false) {
                 // Show progress container
                 progressContainer.style.display = 'block';
                 updateProgress(0, 'Initializing analysis...');
@@ -991,7 +1091,7 @@
                 navButtons.forEach(btn => btn.classList.remove('active'));
                 try {
                     // Analyze user
-                    await analyzeUser(username);
+                    await analyzeUser(username, isAnonymous);
                     // Show results section
                     resultsSection.style.display = 'block';
                     analysisCompleted = true;
@@ -1014,8 +1114,9 @@
                     progressContainer.style.display = 'none';
                 }
             }
+            
             // Async functions for GitHub API
-            async function getUserId(username) {
+            async function getUserId(username, isAnonymous = false) {
                 updateProgress(10, 'Fetching user ID...');
                 const query = `
                     query($login: String!) {
@@ -1024,9 +1125,11 @@
                         }
                     }
                 `;
+                // Use anonymous headers if needed
+                const requestHeaders = isAnonymous ? {} : HEADERS;
                 const response = await fetch(GRAPHQL_URL, {
                     method: 'POST',
-                    headers: HEADERS,
+                    headers: requestHeaders,
                     body: JSON.stringify({
                         query: query,
                         variables: { login: username }
@@ -1044,10 +1147,14 @@
                 }
                 return result.data.user.id;
             }
-            async function fetchRepositories(username) {
+            
+            async function fetchRepositories(username, isAnonymous = false) {
                 updateProgress(20, 'Fetching repositories...');
                 const ownedRepos = [];
                 const contributedRepos = [];
+                // Use anonymous headers if needed
+                const requestHeaders = isAnonymous ? {} : HEADERS;
+                
                 // Fetch owned repos
                 let hasOwnerNextPage = true;
                 let ownerAfterCursor = null;
@@ -1079,7 +1186,7 @@
                     `;
                     const ownerResponse = await fetch(GRAPHQL_URL, {
                         method: 'POST',
-                        headers: HEADERS,
+                        headers: requestHeaders,
                         body: JSON.stringify({
                             query: ownerQuery,
                             variables: {
@@ -1133,7 +1240,7 @@
                     `;
                     const contribResponse = await fetch(GRAPHQL_URL, {
                         method: 'POST',
-                        headers: HEADERS,
+                        headers: requestHeaders,
                         body: JSON.stringify({
                             query: contribQuery,
                             variables: {
@@ -1163,13 +1270,17 @@
                     contributedRepos: uniqueContributedRepos.slice(0, 100)
                 };
             }
-            async function fetchCommitsForAllReposConcurrent(repos, userId, username) {
+            
+            async function fetchCommitsForAllReposConcurrent(repos, userId, username, isAnonymous = false) {
                 updateProgress(30, 'Fetching commit history...');
                 // Process repos with valid default branches
                 const validRepos = repos.filter(repo => repo.defaultBranchRef);
+                // Use anonymous headers if needed
+                const requestHeaders = isAnonymous ? {} : HEADERS;
+                
                 // Create an array of promises for all repo commit fetches
                 const commitPromises = validRepos.map(repo => 
-                    fetchRepoCommits(repo.owner.login, repo.name, userId, username)
+                    fetchRepoCommits(repo.owner.login, repo.name, userId, username, isAnonymous)
                         .then(repoCommits => ({
                             owner: repo.owner.login,
                             name: repo.name,
@@ -1198,10 +1309,14 @@
                 }
                 return results.filter(result => result !== null);
             }
-            async function fetchRepoCommits(owner, name, userId, username) {
+            
+            async function fetchRepoCommits(owner, name, userId, username, isAnonymous = false) {
                 const repoCommits = [];
                 let hasCommitsNextPage = true;
                 let commitsEndCursor = null;
+                // Use anonymous headers if needed
+                const requestHeaders = isAnonymous ? {} : HEADERS;
+                
                 // Fetch commits with author filter to get only user commits
                 let iterations = 0;
                 const maxIterations = 10; // Increased iterations for more commits
@@ -1246,7 +1361,7 @@
                     `;
                     const response = await fetch(GRAPHQL_URL, {
                         method: 'POST',
-                        headers: HEADERS,
+                        headers: requestHeaders,
                         body: JSON.stringify({ query: query })
                     });
                     if (!response.ok) {
@@ -1276,6 +1391,7 @@
                 }
                 return repoCommits;
             }
+            
             function displayResults(username, stats, commitsData) {
                 // Update stats
                 document.getElementById('commit-count').textContent = stats.totalCommits.toLocaleString();
@@ -1312,17 +1428,19 @@
                     repoAnalysis.appendChild(repoDiv);
                 });
             }
-            async function analyzeUser(username) {
+            
+            async function analyzeUser(username, isAnonymous = false) {
                 try {
                     // Step 1: Get user ID
-                    const userId = await getUserId(username);
+                    const userId = await getUserId(username, isAnonymous);
                     // Step 2: Fetch repositories
-                    const { ownedRepos, contributedRepos } = await fetchRepositories(username);
+                    const { ownedRepos, contributedRepos } = await fetchRepositories(username, isAnonymous);
                     // Step 3: Fetch commits concurrently
                     const commitsData = await fetchCommitsForAllReposConcurrent(
                         ownedRepos.concat(contributedRepos), 
                         userId, 
-                        username
+                        username,
+                        isAnonymous
                     );
                     // Step 4: Calculate stats
                     updateProgress(95, 'Generating analysis...');
