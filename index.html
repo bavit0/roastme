@@ -584,7 +584,6 @@
              margin-right: auto;
         }
         /* --- END OF NEW STYLE --- */
-
         /* --- NEW STYLE FOR SCROLL TO TOP WIDGET --- */
         #scroll-to-top {
             position: fixed;
@@ -623,7 +622,6 @@
             fill: white; /* White arrow color */
         }
         /* --- END OF NEW STYLE --- */
-
         @media (max-width: 768px) {
             .input-group {
                 flex-direction: column;
@@ -885,7 +883,6 @@
             </div>
         </div>
     </div>
-
     <!-- --- NEW SCROLL TO TOP WIDGET --- -->
     <div id="scroll-to-top" title="Scroll to Top">
         <!-- Simple SVG Up Arrow Icon -->
@@ -894,12 +891,12 @@
         </svg>
     </div>
     <!-- --- END OF NEW SCROLL TO TOP WIDGET --- -->
-
     <script>
         // Check for stored token
         let GITHUB_TOKEN = localStorage.getItem('github_token') || null;
         let HEADERS = GITHUB_TOKEN ? { "Authorization": `bearer ${GITHUB_TOKEN}` } : {};
         const GRAPHQL_URL = "https://api.github.com/graphql";
+        const REST_API_URL = "https://api.github.com"; // Base URL for REST API
         document.addEventListener('DOMContentLoaded', function() {
             // Custom scrollbar elements
             const customScrollbar = document.getElementById('custom-scrollbar');
@@ -934,11 +931,9 @@
             const saveTokenBtn = document.getElementById('save-token-btn');
             const tokenStatus = document.getElementById('token-status');
             let analysisCompleted = false;
-
             // --- NEW: Scroll-to-Top Widget Elements and Logic ---
             const scrollToTopBtn = document.getElementById('scroll-to-top');
             let isScrolling = false;
-
             function handleScroll() {
                 if (!isScrolling) {
                     window.requestAnimationFrame(function() {
@@ -953,19 +948,15 @@
                     isScrolling = true;
                 }
             }
-
             scrollToTopBtn.addEventListener('click', function() {
                 contentWrapper.scrollTo({
                     top: 0,
                     behavior: 'smooth' // Smooth scroll to top
                 });
             });
-
             // Attach scroll listener to contentWrapper
             contentWrapper.addEventListener('scroll', handleScroll);
             // --- END OF NEW: Scroll-to-Top Widget Logic ---
-
-
             // Load saved token if exists
             if (GITHUB_TOKEN) {
                 tokenInput.value = GITHUB_TOKEN;
@@ -1068,8 +1059,8 @@
                         warningModal.classList.add('active');
                         return;
                     }
-                    // If we have a token, proceed with analysis
-                    await performAnalysis(username);
+                    // If we have a token, proceed with analysis (default to GraphQL)
+                    await performAnalysis(username, false); // false = use GraphQL
                 }
             });
             // Allow Enter key to trigger roast
@@ -1093,11 +1084,12 @@
                 tokenBtn.classList.add('active');
                 tokenSection.scrollIntoView({ behavior: 'smooth' });
             });
-            // Proceed anyway button handler
+            // Proceed anyway button handler - MODIFIED TO PASS useRestFallback flag
             proceedAnywayBtn.addEventListener('click', function() {
                 confirmModal.classList.remove('active');
                 setTimeout(() => {
-                    performAnalysis(usernameInput.value.trim());
+                    // Call performAnalysis with useRestFallback = true
+                    performAnalysis(usernameInput.value.trim(), true); // true = use REST fallback
                 }, 300);
             });
             // Save token button functionality
@@ -1303,11 +1295,202 @@
                     showTokenStatus('Current token is invalid', false);
                 }
             }
-            // Main analysis function
-            async function performAnalysis(username) {
+
+            // --- NEW: REST API Functions ---
+            // Fetch user ID using REST API (GitHub username is usually the ID for REST)
+            async function getUserIdRest(username) {
+                updateProgress(10, 'Fetching user ID (REST)...');
+                const url = `${REST_API_URL}/users/${username}`;
+                const response = await fetch(url, { headers: {} }); // No auth header for fallback
+                if (!response.ok) {
+                    if (response.status === 403) {
+                        throw new Error(`REST API rate limit exceeded. Status: ${response.status}. Message: ${await response.text()}`);
+                    }
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const userData = await response.json();
+                return userData.id; // Return the numeric user ID
+            }
+
+            // Fetch repositories using REST API
+            async function fetchRepositoriesRest(username) {
+                updateProgress(20, 'Fetching repositories (REST)...');
+                const ownedRepos = [];
+                const contributedRepos = [];
+
+                // Fetch owned repos
+                let ownedPage = 1;
+                let ownedHasMore = true;
+                while (ownedHasMore && ownedRepos.length < 100) {
+                    const ownedUrl = `${REST_API_URL}/users/${username}/repos?sort=updated&direction=desc&per_page=100&page=${ownedPage}`;
+                    const ownedResponse = await fetch(ownedUrl, { headers: {} });
+                    if (!ownedResponse.ok) {
+                        if (ownedResponse.status === 403) {
+                            throw new Error(`REST API rate limit exceeded. Status: ${ownedResponse.status}. Message: ${await ownedResponse.text()}`);
+                        }
+                        throw new Error(`HTTP error! status: ${ownedResponse.status}`);
+                    }
+                    const ownedData = await ownedResponse.json();
+                    if (ownedData.length === 0) {
+                        ownedHasMore = false;
+                    } else {
+                        ownedRepos.push(...ownedData.map(repo => ({
+                            id: repo.id,
+                            name: repo.name,
+                            url: repo.html_url,
+                            owner: { login: repo.owner.login },
+                            defaultBranchRef: repo.default_branch ? { name: repo.default_branch } : null
+                        })));
+                        ownedPage++;
+                    }
+                }
+
+                // Fetch starred repos as a proxy for contributed (simplification for REST)
+                // Note: Getting actual contributions is complex without a token in REST.
+                // We'll fetch public events or use starred repos as an approximation.
+                // Let's try fetching events for "PushEvent" which indicates commits.
+                let contribPage = 1;
+                let contribHasMore = true;
+                const processedRepoIds = new Set(ownedRepos.map(r => r.id)); // Avoid duplicates
+                while (contribHasMore && contributedRepos.length < 100) {
+                    // Using events is complex. Let's simplify and fetch starred repos for now.
+                    // Alternatively, one could try iterating through public repos and checking contributors,
+                    // but that's inefficient. We'll stick to owned + a simple proxy.
+                    // For this fallback, we'll just show owned repos and mark contributed as 0.
+                    // A better approach would be to fetch events and parse PushEvents, but let's keep it simple.
+                    // We'll fetch the first page of starred repos as an example proxy.
+                    if (contribPage > 1) break; // Just one page for simplicity
+                    const starredUrl = `${REST_API_URL}/users/${username}/starred?per_page=30&page=${contribPage}`;
+                    const starredResponse = await fetch(starredUrl, { headers: {} });
+                    if (!starredResponse.ok) {
+                        if (starredResponse.status === 403) {
+                            throw new Error(`REST API rate limit exceeded. Status: ${starredResponse.status}. Message: ${await starredResponse.text()}`);
+                        }
+                         // If starred fails, just stop trying to get contributed repos
+                         console.warn("Failed to fetch starred repos (likely private or rate limit). Skipping contributed repos for REST fallback.");
+                         break;
+                    }
+                    const starredData = await starredResponse.json();
+                    if (starredData.length === 0) {
+                        contribHasMore = false;
+                    } else {
+                        for (const repo of starredData) {
+                             if (contributedRepos.length >= 100) break;
+                             if (!processedRepoIds.has(repo.id)) {
+                                 contributedRepos.push({
+                                     id: repo.id,
+                                     name: repo.name,
+                                     url: repo.html_url,
+                                     owner: { login: repo.owner.login },
+                                     defaultBranchRef: repo.default_branch ? { name: repo.default_branch } : null
+                                 });
+                                 processedRepoIds.add(repo.id);
+                             }
+                        }
+                        contribPage++;
+                    }
+                }
+
+                return {
+                    ownedRepos: ownedRepos.slice(0, 100),
+                    contributedRepos: contributedRepos.slice(0, 100)
+                };
+            }
+
+
+            // Fetch commits for a single repo using REST API
+            async function fetchRepoCommitsRest(owner, name, userId, username) {
+                // Note: Filtering by author ID is not straightforward in REST without token.
+                // We will fetch commits and assume they are mostly by the user for owned repos.
+                // For contributed repos, this might be less accurate.
+                const repoCommits = [];
+                let commitsPage = 1;
+                let commitsHasMore = true;
+
+                while (commitsHasMore && repoCommits.length < 1000) { // Limit commits per repo for fallback
+                    const perPage = 100;
+                    const commitsUrl = `${REST_API_URL}/repos/${owner}/${name}/commits?per_page=${perPage}&page=${commitsPage}`;
+                    const commitsResponse = await fetch(commitsUrl, { headers: {} });
+                    if (!commitsResponse.ok) {
+                        if (commitsResponse.status === 403) {
+                            throw new Error(`REST API rate limit exceeded. Status: ${commitsResponse.status}. Message: ${await commitsResponse.text()}`);
+                        }
+                        // If commits are not accessible (e.g., private repo), just return what we have or empty
+                        console.warn(`Failed to fetch commits for ${owner}/${name}. Status: ${commitsResponse.status}. Skipping.`);
+                        break;
+                    }
+                    const commitsData = await commitsResponse.json();
+                    if (commitsData.length === 0) {
+                        commitsHasMore = false;
+                    } else {
+                        // Map commits from REST API format
+                        const newCommits = commitsData.map(commit => ({
+                            message: commit.commit.message,
+                            date: commit.commit.author.date,
+                            author: commit.author ? commit.author.login : 'Unknown'
+                        }));
+                        repoCommits.push(...newCommits);
+                        commitsPage++;
+                        if (commitsData.length < perPage) {
+                           commitsHasMore = false; // Last page
+                        }
+                    }
+                }
+                return repoCommits;
+            }
+
+            // Fetch commits for all repos concurrently using REST API
+            async function fetchCommitsForAllReposConcurrentRest(repos, userId, username) {
+                updateProgress(30, 'Fetching commit history (REST)...');
+                // Process repos with valid default branches
+                const validRepos = repos.filter(repo => repo.defaultBranchRef);
+                // Create an array of promises for all repo commit fetches
+                const commitPromises = validRepos.map(repo =>
+                    fetchRepoCommitsRest(repo.owner.login, repo.name, userId, username)
+                        .then(repoCommits => ({
+                            owner: repo.owner.login,
+                            name: repo.name,
+                            url: repo.url,
+                            branch: repo.defaultBranchRef ? repo.defaultBranchRef.name : 'main', // Assume main if not available
+                            commit_count: repoCommits.length,
+                            commits: repoCommits
+                        }))
+                        .catch(error => {
+                            console.error(`Error fetching commits for ${repo.owner.login}/${repo.name} (REST):`, error);
+                            // Return partial data or null
+                            return {
+                                owner: repo.owner.login,
+                                name: repo.name,
+                                url: repo.url,
+                                branch: repo.defaultBranchRef ? repo.defaultBranchRef.name : 'main',
+                                commit_count: 0,
+                                commits: [],
+                                error: error.message // Include error for display
+                            };
+                        })
+                );
+                // Process all promises concurrently with progress updates
+                const totalRepos = commitPromises.length;
+                const results = [];
+                // Process in batches to show progress - increased batch size for faster processing
+                const batchSize = 5; // Smaller batch size for REST to be gentler
+                for (let i = 0; i < commitPromises.length; i += batchSize) {
+                    const batch = commitPromises.slice(i, i + batchSize);
+                    const batchResults = await Promise.all(batch);
+                    results.push(...batchResults.filter(result => result !== null));
+                    // Update progress (30% to 90% range)
+                    const progress = 30 + ((i + batchSize) / totalRepos) * 60;
+                    updateProgress(Math.min(progress, 90), `Processed ${Math.min(i + batchSize, totalRepos)} of ${totalRepos} repositories (REST)...`);
+                }
+                return results.filter(result => result !== null);
+            }
+            // --- END OF NEW: REST API Functions ---
+
+            // Main analysis function - MODIFIED TO ACCEPT useRestFallback flag
+            async function performAnalysis(username, useRestFallback = false) {
                 // Show progress container
                 progressContainer.style.display = 'block';
-                updateProgress(0, 'Initializing analysis...');
+                updateProgress(0, useRestFallback ? 'Initializing analysis (REST fallback)...' : 'Initializing analysis...');
                 // Hide all other sections
                 faqSection.style.display = 'none';
                 aboutSection.style.display = 'none';
@@ -1316,8 +1499,8 @@
                 compilerSection.style.display = 'none';
                 navButtons.forEach(btn => btn.classList.remove('active'));
                 try {
-                    // Analyze user
-                    await analyzeUser(username);
+                    // Analyze user - PASS THE useRestFallback FLAG
+                    await analyzeUser(username, useRestFallback);
                     // Show results section
                     resultsSection.style.display = 'block';
                     analysisCompleted = true;
@@ -1340,190 +1523,203 @@
                     progressContainer.style.display = 'none';
                 }
             }
-            // Async functions for GitHub API
-            async function getUserId(username) {
-                updateProgress(10, 'Fetching user ID...');
-                const query = `
-                    query($login: String!) {
-                        user(login: $login) {
-                            id
-                        }
-                    }
-                `;
-                const response = await fetch(GRAPHQL_URL, {
-                    method: 'POST',
-                    headers: HEADERS,
-                    body: JSON.stringify({
-                        query: query,
-                        variables: { login: username }
-                    })
-                });
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                const result = await response.json();
-                if (result.errors) {
-                    throw new Error(result.errors[0].message);
-                }
-                if (!result.data.user) {
-                    throw new Error(`User '${username}' not found`);
-                }
-                return result.data.user.id;
+
+            // Async functions for GitHub API - MODIFIED TO ACCEPT useRestFallback flag
+            async function getUserId(username, useRestFallback = false) {
+               if (useRestFallback) {
+                   return await getUserIdRest(username);
+               }
+               updateProgress(10, 'Fetching user ID...');
+               const query = `
+                   query($login: String!) {
+                       user(login: $login) {
+                           id
+                       }
+                   }
+               `;
+               const response = await fetch(GRAPHQL_URL, {
+                   method: 'POST',
+                   headers: HEADERS,
+                   body: JSON.stringify({
+                       query: query,
+                       variables: { login: username }
+                   })
+               });
+               if (!response.ok) {
+                   throw new Error(`HTTP error! status: ${response.status}`);
+               }
+               const result = await response.json();
+               if (result.errors) {
+                   throw new Error(result.errors[0].message);
+               }
+               if (!result.data.user) {
+                   throw new Error(`User '${username}' not found`);
+               }
+               return result.data.user.id;
             }
-            async function fetchRepositories(username) {
-                updateProgress(20, 'Fetching repositories...');
-                const ownedRepos = [];
-                const contributedRepos = [];
-                // Fetch owned repos
-                let hasOwnerNextPage = true;
-                let ownerAfterCursor = null;
-                while (hasOwnerNextPage && ownedRepos.length < 100) {
-                    const ownerQuery = `
-                        query($login: String!, $after: String, $first: Int) {
-                            user(login: $login) {
-                                repositories(
-                                    first: $first,
-                                    after: $after,
-                                    orderBy: {field: NAME, direction: ASC},
-                                    ownerAffiliations: OWNER
-                                ) {
-                                    pageInfo { hasNextPage endCursor }
-                                    nodes {
-                                        id
-                                        name
-                                        url
-                                        owner {
-                                            login
-                                        }
-                                        defaultBranchRef {
-                                            name
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    `;
-                    const ownerResponse = await fetch(GRAPHQL_URL, {
-                        method: 'POST',
-                        headers: HEADERS,
-                        body: JSON.stringify({
-                            query: ownerQuery,
-                            variables: {
-                                login: username,
-                                after: ownerAfterCursor,
-                                first: Math.min(100, 100 - ownedRepos.length)
-                            }
-                        })
-                    });
-                    if (!ownerResponse.ok) {
-                        throw new Error(`HTTP error! status: ${ownerResponse.status}`);
-                    }
-                    const ownerResult = await ownerResponse.json();
-                    if (ownerResult.errors) {
-                        throw new Error(ownerResult.errors[0].message);
-                    }
-                    const ownerData = ownerResult.data.user.repositories;
-                    ownedRepos.push(...ownerData.nodes);
-                    hasOwnerNextPage = ownerData.pageInfo.hasNextPage;
-                    ownerAfterCursor = ownerData.pageInfo.endCursor;
-                }
-                // Fetch contributed repos
-                let hasContribNextPage = true;
-                let contribAfterCursor = null;
-                while (hasContribNextPage && contributedRepos.length < 100) {
-                    const contribQuery = `
-                        query($login: String!, $after: String, $first: Int) {
-                            user(login: $login) {
-                                repositoriesContributedTo(
-                                    first: $first,
-                                    after: $after,
-                                    orderBy: {field: NAME, direction: ASC},
-                                    contributionTypes: [COMMIT, PULL_REQUEST, REPOSITORY],
-                                    includeUserRepositories: false
-                                ) {
-                                    pageInfo { hasNextPage endCursor }
-                                    nodes {
-                                        id
-                                        name
-                                        url
-                                        owner {
-                                            login
-                                        }
-                                        defaultBranchRef {
-                                            name
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    `;
-                    const contribResponse = await fetch(GRAPHQL_URL, {
-                        method: 'POST',
-                        headers: HEADERS,
-                        body: JSON.stringify({
-                            query: contribQuery,
-                            variables: {
-                                login: username,
-                                after: contribAfterCursor,
-                                first: Math.min(100, 100 - contributedRepos.length)
-                            }
-                        })
-                    });
-                    if (!contribResponse.ok) {
-                        throw new Error(`HTTP error! status: ${contribResponse.status}`);
-                    }
-                    const contribResult = await contribResponse.json();
-                    if (contribResult.errors) {
-                        throw new Error(contribResult.errors[0].message);
-                    }
-                    const contribData = contribResult.data.user.repositoriesContributedTo;
-                    contributedRepos.push(...contribData.nodes);
-                    hasContribNextPage = contribData.pageInfo.hasNextPage;
-                    contribAfterCursor = contribData.pageInfo.endCursor;
-                }
-                // Remove duplicates (repos that are both owned and contributed to)
-                const ownedIds = new Set(ownedRepos.map(repo => repo.id));
-                const uniqueContributedRepos = contributedRepos.filter(repo => !ownedIds.has(repo.id));
-                return {
-                    ownedRepos: ownedRepos.slice(0, 100),
-                    contributedRepos: uniqueContributedRepos.slice(0, 100)
-                };
+
+            async function fetchRepositories(username, useRestFallback = false) {
+               if (useRestFallback) {
+                   return await fetchRepositoriesRest(username);
+               }
+               updateProgress(20, 'Fetching repositories...');
+               const ownedRepos = [];
+               const contributedRepos = [];
+               // Fetch owned repos
+               let hasOwnerNextPage = true;
+               let ownerAfterCursor = null;
+               while (hasOwnerNextPage && ownedRepos.length < 100) {
+                   const ownerQuery = `
+                       query($login: String!, $after: String, $first: Int) {
+                           user(login: $login) {
+                               repositories(
+                                   first: $first,
+                                   after: $after,
+                                   orderBy: {field: NAME, direction: ASC},
+                                   ownerAffiliations: OWNER
+                               ) {
+                                   pageInfo { hasNextPage endCursor }
+                                   nodes {
+                                       id
+                                       name
+                                       url
+                                       owner {
+                                           login
+                                       }
+                                       defaultBranchRef {
+                                           name
+                                       }
+                                   }
+                               }
+                           }
+                       }
+                   `;
+                   const ownerResponse = await fetch(GRAPHQL_URL, {
+                       method: 'POST',
+                       headers: HEADERS,
+                       body: JSON.stringify({
+                           query: ownerQuery,
+                           variables: {
+                               login: username,
+                               after: ownerAfterCursor,
+                               first: Math.min(100, 100 - ownedRepos.length)
+                           }
+                       })
+                   });
+                   if (!ownerResponse.ok) {
+                       throw new Error(`HTTP error! status: ${ownerResponse.status}`);
+                   }
+                   const ownerResult = await ownerResponse.json();
+                   if (ownerResult.errors) {
+                       throw new Error(ownerResult.errors[0].message);
+                   }
+                   const ownerData = ownerResult.data.user.repositories;
+                   ownedRepos.push(...ownerData.nodes);
+                   hasOwnerNextPage = ownerData.pageInfo.hasNextPage;
+                   ownerAfterCursor = ownerData.pageInfo.endCursor;
+               }
+               // Fetch contributed repos
+               let hasContribNextPage = true;
+               let contribAfterCursor = null;
+               while (hasContribNextPage && contributedRepos.length < 100) {
+                   const contribQuery = `
+                       query($login: String!, $after: String, $first: Int) {
+                           user(login: $login) {
+                               repositoriesContributedTo(
+                                   first: $first,
+                                   after: $after,
+                                   orderBy: {field: NAME, direction: ASC},
+                                   contributionTypes: [COMMIT, PULL_REQUEST, REPOSITORY],
+                                   includeUserRepositories: false
+                               ) {
+                                   pageInfo { hasNextPage endCursor }
+                                   nodes {
+                                       id
+                                       name
+                                       url
+                                       owner {
+                                           login
+                                       }
+                                       defaultBranchRef {
+                                           name
+                                       }
+                                   }
+                               }
+                           }
+                       }
+                   `;
+                   const contribResponse = await fetch(GRAPHQL_URL, {
+                       method: 'POST',
+                       headers: HEADERS,
+                       body: JSON.stringify({
+                           query: contribQuery,
+                           variables: {
+                               login: username,
+                               after: contribAfterCursor,
+                               first: Math.min(100, 100 - contributedRepos.length)
+                           }
+                       })
+                   });
+                   if (!contribResponse.ok) {
+                       throw new Error(`HTTP error! status: ${contribResponse.status}`);
+                   }
+                   const contribResult = await contribResponse.json();
+                   if (contribResult.errors) {
+                       throw new Error(contribResult.errors[0].message);
+                   }
+                   const contribData = contribResult.data.user.repositoriesContributedTo;
+                   contributedRepos.push(...contribData.nodes);
+                   hasContribNextPage = contribData.pageInfo.hasNextPage;
+                   contribAfterCursor = contribData.pageInfo.endCursor;
+               }
+               // Remove duplicates (repos that are both owned and contributed to)
+               const ownedIds = new Set(ownedRepos.map(repo => repo.id));
+               const uniqueContributedRepos = contributedRepos.filter(repo => !ownedIds.has(repo.id));
+               return {
+                   ownedRepos: ownedRepos.slice(0, 100),
+                   contributedRepos: uniqueContributedRepos.slice(0, 100)
+               };
             }
-            async function fetchCommitsForAllReposConcurrent(repos, userId, username) {
-                updateProgress(30, 'Fetching commit history...');
-                // Process repos with valid default branches
-                const validRepos = repos.filter(repo => repo.defaultBranchRef);
-                // Create an array of promises for all repo commit fetches
-                const commitPromises = validRepos.map(repo =>
-                    fetchRepoCommits(repo.owner.login, repo.name, userId, username)
-                        .then(repoCommits => ({
-                            owner: repo.owner.login,
-                            name: repo.name,
-                            url: repo.url,
-                            branch: repo.defaultBranchRef.name,
-                            commit_count: repoCommits.length,
-                            commits: repoCommits
-                        }))
-                        .catch(error => {
-                            console.error(`Error fetching commits for ${repo.owner.login}/${repo.name}:`, error);
-                            return null;
-                        })
-                );
-                // Process all promises concurrently with progress updates
-                const totalRepos = commitPromises.length;
-                const results = [];
-                // Process in batches to show progress - increased batch size for faster processing
-                const batchSize = 10;
-                for (let i = 0; i < commitPromises.length; i += batchSize) {
-                    const batch = commitPromises.slice(i, i + batchSize);
-                    const batchResults = await Promise.all(batch);
-                    results.push(...batchResults.filter(result => result !== null));
-                    // Update progress (30% to 90% range)
-                    const progress = 30 + ((i + batchSize) / totalRepos) * 60;
-                    updateProgress(Math.min(progress, 90), `Processed ${Math.min(i + batchSize, totalRepos)} of ${totalRepos} repositories...`);
-                }
-                return results.filter(result => result !== null);
+
+            async function fetchCommitsForAllReposConcurrent(repos, userId, username, useRestFallback = false) {
+               if (useRestFallback) {
+                   return await fetchCommitsForAllReposConcurrentRest(repos, userId, username);
+               }
+               updateProgress(30, 'Fetching commit history...');
+               // Process repos with valid default branches
+               const validRepos = repos.filter(repo => repo.defaultBranchRef);
+               // Create an array of promises for all repo commit fetches
+               const commitPromises = validRepos.map(repo =>
+                   fetchRepoCommits(repo.owner.login, repo.name, userId, username)
+                       .then(repoCommits => ({
+                           owner: repo.owner.login,
+                           name: repo.name,
+                           url: repo.url,
+                           branch: repo.defaultBranchRef.name,
+                           commit_count: repoCommits.length,
+                           commits: repoCommits
+                       }))
+                       .catch(error => {
+                           console.error(`Error fetching commits for ${repo.owner.login}/${repo.name}:`, error);
+                           return null;
+                       })
+               );
+               // Process all promises concurrently with progress updates
+               const totalRepos = commitPromises.length;
+               const results = [];
+               // Process in batches to show progress - increased batch size for faster processing
+               const batchSize = 10;
+               for (let i = 0; i < commitPromises.length; i += batchSize) {
+                   const batch = commitPromises.slice(i, i + batchSize);
+                   const batchResults = await Promise.all(batch);
+                   results.push(...batchResults.filter(result => result !== null));
+                   // Update progress (30% to 90% range)
+                   const progress = 30 + ((i + batchSize) / totalRepos) * 60;
+                   updateProgress(Math.min(progress, 90), `Processed ${Math.min(i + batchSize, totalRepos)} of ${totalRepos} repositories...`);
+               }
+               return results.filter(result => result !== null);
             }
+
             async function fetchRepoCommits(owner, name, userId, username) {
                 const repoCommits = [];
                 let hasCommitsNextPage = true;
@@ -1602,28 +1798,24 @@
                 }
                 return repoCommits;
             }
+
             // --- CHANGED: Modified displayResults to conditionally show "Show Everything" button ---
             function displayResults(username, stats, commitsData) {
                  // Update stats
                 document.getElementById('commit-count').textContent = stats.totalCommits.toLocaleString();
                 document.getElementById('owned-repo-count').textContent = stats.ownedRepos;
                 document.getElementById('contributed-repo-count').textContent = stats.contributedRepos;
-
                 // Display repository analysis
                 const repoAnalysis = document.getElementById('repo-analysis');
                 repoAnalysis.innerHTML = '<h2 style="color: #4ecdc4; margin-bottom: 20px;">Repository Analysis</h2>';
-
                 if (commitsData.length === 0) {
                     repoAnalysis.innerHTML += '<p>No commit data available for analysis.</p>';
                     return;
                 }
-
                 // Store the full data on the element for later use
                 repoAnalysis.dataset.allReposData = JSON.stringify(commitsData);
-
                 // Show top repositories by commit count (initial view)
                 displayTopRepos(commitsData, repoAnalysis);
-
                 // --- CHANGED: Only create and append the "Show Everything" button if needed ---
                 // Check if we have more repos than the 5 we are showing
                 if (commitsData.length > 5) {
@@ -1637,21 +1829,17 @@
                     showAllButton.style.width = 'fit-content';
                     // Store visibility state for toggle button interaction
                     showAllButton.dataset.wasVisible = 'true';
-
                     showAllButton.addEventListener('click', function() {
                         displayAllRepos(commitsData, repoAnalysis);
                         showAllButton.style.display = 'none'; // Hide button after clicking
                         showAllButton.dataset.wasVisible = 'false'; // Update state
                     });
-
                     repoAnalysis.appendChild(showAllButton);
-
                     // Store reference to the button for hiding/showing with toggle
                     repoAnalysis.dataset.showAllButtonId = showAllButton.id;
                 }
                 // --- END OF CHANGED ---
             }
-
             // Function to display only the top 5 repos
             function displayTopRepos(commitsData, containerElement) {
                 // Clear existing repo sections but keep the main title
@@ -1659,19 +1847,18 @@
                 const showAllBtn = document.getElementById(containerElement.dataset.showAllButtonId);
                 containerElement.innerHTML = ''; // Clear
                 if (title) containerElement.appendChild(title); // Re-add title
-
                 // Show top repositories by commit count
                 const sortedRepos = [...commitsData].sort((a, b) => b.commit_count - a.commit_count);
                 const topRepos = sortedRepos.slice(0, 5);
-
                 if (topRepos.length === 0) {
                     containerElement.innerHTML += '<p>No commits found for analysis.</p>';
                     return;
                 }
-
                 topRepos.forEach(repo => {
                     const repoDiv = document.createElement('div');
                     repoDiv.className = 'repo-section';
+                    // Handle potential errors from REST fallback
+                    const errorMessage = repo.error ? `<div style="color: #ff6b6b; font-size: 0.8rem; margin-top: 5px;">Note: ${repo.error}</div>` : '';
                     repoDiv.innerHTML = `
                         <div class="repo-title">
                             <a href="${repo.url}" class="repo-url" target="_blank">${repo.owner}/${repo.name}</a>
@@ -1686,10 +1873,10 @@
                             `).join('')}
                             ${repo.commits.length > 3 ? `<div class="commit-item">... and ${repo.commits.length - 3} more commits</div>` : ''}
                         </div>
+                        ${errorMessage}
                     `;
                     containerElement.appendChild(repoDiv);
                 });
-
                 // --- CHANGED: Re-append the "Show Everything" button if it existed and was meant to be visible ---
                 if (showAllBtn) {
                     // Only show if it was previously set to display 'block' or if we just created it
@@ -1700,25 +1887,23 @@
                 }
                 // --- END OF CHANGED ---
             }
-
             // Function to display all repos
             function displayAllRepos(commitsData, containerElement) {
                 // Clear existing repo sections but keep the main title
                 const title = containerElement.querySelector('h2');
                 containerElement.innerHTML = ''; // Clear
                 if (title) containerElement.appendChild(title); // Re-add title
-
                 // Show ALL repositories by commit count
                 const sortedRepos = [...commitsData].sort((a, b) => b.commit_count - a.commit_count);
-
                 if (sortedRepos.length === 0) {
                     containerElement.innerHTML += '<p>No commits found for analysis.</p>';
                     return;
                 }
-
                 sortedRepos.forEach(repo => {
                     const repoDiv = document.createElement('div');
                     repoDiv.className = 'repo-section';
+                    // Handle potential errors from REST fallback
+                    const errorMessage = repo.error ? `<div style="color: #ff6b6b; font-size: 0.8rem; margin-top: 5px;">Note: ${repo.error}</div>` : '';
                     repoDiv.innerHTML = `
                         <div class="repo-title">
                             <a href="${repo.url}" class="repo-url" target="_blank">${repo.owner}/${repo.name}</a>
@@ -1733,40 +1918,44 @@
                             `).join('')}
                             ${repo.commits.length > 3 ? `<div class="commit-item">... and ${repo.commits.length - 3} more commits</div>` : ''}
                         </div>
+                        ${errorMessage}
                     `;
                     containerElement.appendChild(repoDiv);
                 });
                  // Note: The "Show Everything" button is hidden by its own click handler
             }
 
-
-            async function analyzeUser(username) {
+            // --- MODIFIED: analyzeUser to accept and use useRestFallback flag ---
+            async function analyzeUser(username, useRestFallback = false) {
                 try {
                     // Step 1: Get user ID
-                    const userId = await getUserId(username);
+                    const userId = await getUserId(username, useRestFallback);
                     // Step 2: Fetch repositories
-                    const { ownedRepos, contributedRepos } = await fetchRepositories(username);
+                    const { ownedRepos, contributedRepos } = await fetchRepositories(username, useRestFallback);
                     // Step 3: Fetch commits concurrently
                     const commitsData = await fetchCommitsForAllReposConcurrent(
                         ownedRepos.concat(contributedRepos),
                         userId,
-                        username
+                        username,
+                        useRestFallback // Pass the flag down
                     );
                     // Step 4: Calculate stats
-                    updateProgress(95, 'Generating analysis...');
-                    const totalCommits = commitsData.reduce((sum, repo) => sum + repo.commit_count, 0);
+                    updateProgress(95, useRestFallback ? 'Generating analysis (REST)...' : 'Generating analysis...');
+                    const totalCommits = commitsData.reduce((sum, repo) => sum + (repo.commit_count || 0), 0);
                     const stats = {
                         totalCommits: totalCommits,
                         ownedRepos: ownedRepos.length,
                         contributedRepos: contributedRepos.length
                     };
                     // Step 5: Display results
-                    updateProgress(100, 'Analysis complete!');
+                    updateProgress(100, useRestFallback ? 'Analysis complete (REST)!' : 'Analysis complete!');
                     displayResults(username, stats, commitsData);
                 } catch (error) {
                     throw new Error(`Failed to analyze user: ${error.message}`);
                 }
             }
+            // --- END OF MODIFIED: analyzeUser ---
+
         });
     </script>
 </body>
