@@ -129,6 +129,8 @@
         .emoji-showcase span:nth-child(3) { animation-delay: 0.4s; }
         .emoji-showcase span:nth-child(4) { animation-delay: 0.6s; }
         .emoji-showcase span:nth-child(5) { animation-delay: 0.8s; }
+        /* Style for the bug emoji if it's added */
+        .emoji-showcase span.bug-emoji { animation-delay: 1.0s; }
         @keyframes bounce {
             0%, 100% { transform: translateY(0); }
             50% { transform: translateY(-15px); }
@@ -689,6 +691,17 @@
             background: rgba(231, 76, 60, 0.3);
             transform: translateY(-2px);
         }
+        /* Styles for the new Super Error Modal */
+        .super-error-modal .modal-title {
+            color: #ffcc00; /* Different color for error */
+        }
+        .super-error-modal .modal-text {
+            text-align: center;
+        }
+        .super-error-modal .modal-btn {
+            padding: 10px 20px;
+        }
+
         @media (max-width: 768px) {
             .input-group {
                 flex-direction: column;
@@ -746,12 +759,13 @@
                 <div class="logo" id="hall-of-fame-btn">🔥</div>
                 <h1>GITHUB ROASTER</h1>
                 <p class="subtitle">Drop a GitHub username and we'll dig through their commit graveyard, questionable code, and emoji crimes.</p>
-                <div class="emoji-showcase">
+                <div class="emoji-showcase" id="emoji-showcase">
                     <span>🍖</span>
                     <span>♨️</span>
                     <span>🥩</span>
                     <span>🥓</span>
                     <span>🍳</span>
+                     <!-- Bug emoji will be inserted here if petted -->
                 </div>
             </header>
             <section class="input-section">
@@ -787,8 +801,10 @@
                     <div id="token-status" class="token-status" style="display: none;"></div>
                     <div class="token-info">
                         <p>No data is stored or sent anywhere—everything runs in your browser using client-side magic 🔒</p>
+                        <p style="margin-bottom: 20px;"></p>
                         <p>You'll need a personal access token to avoid the guest rate limit (50 requests/hour).</p>
                         <p>In case you don't have one yet, you can create it here: <a href="https://github.com/settings/personal-access-tokens" target="_blank">GitHub Personal Access Tokens</a> 🔑</p>
+                        <p style="margin-bottom: 15px;"></p>
                         <p>If you'd rather not use your account token, no worries! Just keep in mind there's a 50 requests/hour limit ⏳</p>
                     </div>
                 </div>
@@ -818,14 +834,14 @@
                 </div>
             </section>
             <section class="faq-section" id="faq-section">
-                <h2>🔥 Frequently Asked Questions</h2>
+                <h2>🤔 FREQUENTLY ASKED QUESTIONS</h2>
                 <div class="faq-item">
                     <div class="faq-question">Q: What is the purpose of this site?</div>
                     <div class="faq-answer">A: We peek into GitHub’s GraphQL API, dig up public user data and… roast it just a little bit. Think of it as “self-reflection but spicier.”</div>
                 </div>
                 <div class="faq-item">
                     <div class="faq-question">Q: How does it work?</div>
-                    <div class="faq-answer">A: Same magic. We poke GitHub with GraphQL API / REST API, grab public repos and commits, feed them into our highly scientific engine and show you the results low and slow <a href="https://www.youtube.com/@MaxtheMeatGuy/videos" style="color: inherit; text-decoration: inherit;" title="Meat Guy">🍖</a>.</div>
+                    <div class="faq-answer">A: Same magic. We poke GitHub with GraphQL API / REST API, grab public repos and commits, feed them into our highly scientific engine and show you the results low and slow <a href="https://www.youtube.com/@MaxtheMeatGuy/videos" style="color: inherit; text-decoration: inherit;" title="Meat Guy">🍖</a></div>
                 </div>
                 <div class="faq-item">
                     <div class="faq-question">Q: Is this safe?</div>
@@ -920,6 +936,7 @@
                 <p> Coded in a hostage negotiation with our <span class="compiler-trigger" id="compiler-trigger">compiler.</span> Enjoy!</p>
             </footer>
         </div>
+        <!-- Existing Modals -->
         <div class="modal-overlay" id="rate-limit-modal">
             <div class="modal-content">
                 <h2 class="modal-title">🔔 Heads up! 🔔</h2>
@@ -971,6 +988,20 @@
                 </div>
             </div>
         </div>
+
+        <!-- NEW Super Error Modal -->
+        <div class="modal-overlay super-error-modal" id="super-error-modal">
+            <div class="modal-content">
+                <h2 class="modal-title">Undefined Error 🤓☝️</h2>
+                <div class="modal-text">Something went wrong...</div>
+                <div class="modal-buttons">
+                    <button class="modal-btn secondary-btn" id="frown-btn">Frown and continue 😔</button>
+                    <button class="modal-btn primary-btn" id="pet-error-btn">Pet the error 🐛</button>
+                </div>
+            </div>
+        </div>
+        <!-- END NEW Super Error Modal -->
+
     </div>
     <div id="scroll-to-top" title="Scroll to Top">
         <svg class="scroll-to-top-icon" viewBox="0 0 24 24">
@@ -983,11 +1014,52 @@
         const GRAPHQL_URL = "https://api.github.com/graphql";
         const REST_API_URL = "https://api.github.com";
         const forbiddenNames = [
-            "chatgpt", "gpt", "claude", "gemini", "copilot", 
-            "mistral", "perplexity", "bard", "llama", "groq", 
+            "chatgpt", "gpt", "claude", "gemini", "copilot",
+            "mistral", "perplexity", "bard", "llama", "groq",
             "microsoft", "bing", "viva", "azure"
         ];
         let forbiddenAttempts = 0;
+
+        // --- NEW: Super Error Handler Setup ---
+        let isSuperErrorModalActive = false; // Prevent multiple modals
+
+        function showSuperErrorModal(errorMessage) {
+            if (isSuperErrorModalActive) return; // Prevent stacking
+            isSuperErrorModalActive = true;
+
+            const superErrorModal = document.getElementById('super-error-modal');
+            const modalText = superErrorModal.querySelector('.modal-text');
+            // Optional: Display the actual error message for debugging (comment out if not desired)
+            // modalText.textContent = `Something went wrong... (${errorMessage})`;
+            modalText.textContent = "Something went wrong...";
+
+            superErrorModal.classList.add('active');
+        }
+
+        function hideSuperErrorModal() {
+            const superErrorModal = document.getElementById('super-error-modal');
+            superErrorModal.classList.remove('active');
+            isSuperErrorModalActive = false;
+        }
+
+        // Global error handler for uncaught exceptions
+        window.onerror = function(message, source, lineno, colno, error) {
+            console.error("Global error handler caught:", message, "at", source, ":", lineno, ":", colno, "Error object:", error);
+            // Show the super error modal
+            showSuperErrorModal(message || "Unknown error");
+            return true; // Prevent default browser error handling (like console)
+        };
+
+        // Global handler for unhandled promise rejections (async errors)
+        window.addEventListener('unhandledrejection', function(event) {
+            console.error("Unhandled promise rejection:", event.reason);
+            // Show the super error modal
+            showSuperErrorModal(event.reason?.message || "Promise rejection");
+            event.preventDefault(); // Prevent default browser error handling
+        });
+
+        // --- END: Super Error Handler Setup ---
+
         document.addEventListener('DOMContentLoaded', function() {
             const customScrollbar = document.getElementById('custom-scrollbar');
             const scrollbarThumb = document.getElementById('scrollbar-thumb');
@@ -1029,8 +1101,15 @@
             const submitBtn1 = document.getElementById('submit-btn-1');
             const submitBtn2 = document.getElementById('submit-btn-2');
             const scrollToTopBtn = document.getElementById('scroll-to-top');
-            let isScrolling = false;
+            const emojiShowcase = document.getElementById('emoji-showcase');
+             // --- NEW: Super Error Modal Buttons ---
+            const superErrorModal = document.getElementById('super-error-modal');
+            const frownBtn = document.getElementById('frown-btn');
+            const petErrorBtn = document.getElementById('pet-error-btn');
+            // --- END: Super Error Modal Buttons ---
 
+
+            let isScrolling = false;
             function handleScroll() {
                 if (!isScrolling) {
                     window.requestAnimationFrame(function() {
@@ -1045,13 +1124,10 @@
                     isScrolling = true;
                 }
             }
-
             scrollToTopBtn.addEventListener('click', function() {
                 contentWrapper.scrollTo({ top: 0, behavior: 'smooth' });
             });
-
             contentWrapper.addEventListener('scroll', handleScroll);
-
             if (GITHUB_TOKEN) {
                 tokenInput.value = GITHUB_TOKEN;
                 modalTokenInput.value = GITHUB_TOKEN;
@@ -1059,6 +1135,19 @@
                 saveTokenBtn.classList.remove('primary-btn');
                 saveTokenBtn.classList.add('delete-token-btn');
             }
+
+            // --- NEW: Initialize Emoji Showcase with Bug if Petted ---
+            function initializeEmojiShowcase() {
+                const bugEmojiPetted = localStorage.getItem('bugEmojiPetted');
+                if (bugEmojiPetted === 'true') {
+                    const bugSpan = document.createElement('span');
+                    bugSpan.textContent = '🐛';
+                    bugSpan.classList.add('bug-emoji'); // Add class for specific styling/animation
+                    emojiShowcase.appendChild(bugSpan);
+                }
+            }
+            initializeEmojiShowcase(); // Call on page load
+            // --- END: Initialize Emoji Showcase ---
 
             function initCustomScrollbar() {
                 if (contentWrapper.scrollHeight > window.innerHeight) {
@@ -1068,7 +1157,6 @@
                 window.addEventListener('resize', updateCustomScrollbar);
                 updateCustomScrollbar();
             }
-
             function updateCustomScrollbar() {
                 const contentHeight = contentWrapper.scrollHeight;
                 const viewportHeight = window.innerHeight;
@@ -1087,11 +1175,9 @@
                 scrollbarThumb.style.height = `${thumbHeight}px`;
                 scrollbarThumb.style.top = `${thumbPosition}px`;
             }
-
             let isDragging = false;
             let startY;
             let startScrollTop;
-
             scrollbarThumb.addEventListener('mousedown', function(e) {
                 isDragging = true;
                 startY = e.clientY;
@@ -1099,7 +1185,6 @@
                 scrollbarThumb.classList.add('dragging');
                 e.preventDefault();
             });
-
             document.addEventListener('mousemove', function(e) {
                 if (!isDragging) return;
                 const deltaY = e.clientY - startY;
@@ -1109,24 +1194,20 @@
                 const scrollDelta = deltaY / scrollRatio;
                 contentWrapper.scrollTop = startScrollTop + scrollDelta;
             });
-
             document.addEventListener('mouseup', function() {
                 if (isDragging) {
                     isDragging = false;
                     scrollbarThumb.classList.remove('dragging');
                 }
             });
-
             contentWrapper.addEventListener('wheel', function() {
                 setTimeout(updateCustomScrollbar, 0);
             });
-
             customScrollbar.addEventListener('mouseenter', function() {
                 if (contentWrapper.scrollHeight > window.innerHeight) {
                     customScrollbar.classList.add('visible');
                 }
             });
-
             let hideTimeout;
             function scheduleHideScrollbar() {
                 clearTimeout(hideTimeout);
@@ -1138,11 +1219,9 @@
                     }, 1000);
                 }
             }
-
             contentWrapper.addEventListener('scroll', scheduleHideScrollbar);
             customScrollbar.addEventListener('mouseleave', scheduleHideScrollbar);
             window.addEventListener('load', initCustomScrollbar);
-
             roastBtn.addEventListener('click', async function() {
                 const username = usernameInput.value.trim().toLowerCase();
                 if (username !== '') {
@@ -1159,20 +1238,51 @@
                         return;
                     }
                     const useGraphQL = !!GITHUB_TOKEN;
-                    await performAnalysis(username, !useGraphQL);
+                    // Wrap the analysis call in a try/catch to handle errors locally if needed,
+                    // but re-throw to let the global handler catch them for the super error modal.
+                    try {
+                         await performAnalysis(username, !useGraphQL);
+                    } catch (error) {
+                        // Check if it's a rate limit error handled specifically
+                        if (error.message.includes('rate limit')) {
+                            // The performAnalysis function already handles rate limits by showing the modal.
+                            // We don't need to do anything else here for rate limits.
+                            console.log("Rate limit error handled internally.");
+                            // Prevent the global handler from catching this specific rate limit error
+                            // by returning or not re-throwing.
+                            // However, if you want the super error modal for *any* error including rate limits,
+                            // you would re-throw here or call showSuperErrorModal directly.
+                            // For now, let's assume rate limits are handled internally and we want the super error
+                            // modal for other unexpected errors.
+                            // If performAnalysis *didn't* show the modal internally for rate limits, we'd need to check here.
+                            // But it seems it does, so we can just return.
+                             // Re-throw to let the global handler catch it and show the super error modal
+                             // if it's not a rate limit error already handled by performAnalysis.
+                             // Or, if performAnalysis shows the rate limit modal but *also* throws,
+                             // re-throwing here would trigger the global handler.
+                             // Let's re-throw to be safe and let the global handler decide based on the error message.
+                             // The global handler checks for 'rate limit' in the message.
+                             throw error; // This will be caught by window.onerror
+                        } else {
+                             // For non-rate-limit errors, re-throw to trigger the global handler
+                             throw error;
+                        }
+                        // If performAnalysis handles all errors internally (e.g., shows its own modals),
+                        // you might not need this try/catch block at all, or just use it for logging.
+                        // But to ensure the super error modal catches *any* unhandled error from the button click,
+                        // re-throwing is the way to go.
+                        // The global handler will differentiate based on the error message.
+                    }
                 }
             });
-
             usernameInput.addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') {
                     roastBtn.click();
                 }
             });
-
             gotItBtn.addEventListener('click', function() {
                 rateLimitModal.classList.remove('active');
             });
-
             modalSaveTokenBtn.addEventListener('click', async function() {
                 const token = modalTokenInput.value.trim();
                 if (token) {
@@ -1185,7 +1295,13 @@
                         tokenModal.classList.remove('active');
                         const username = usernameInput.value.trim();
                         if (username) {
-                            await performAnalysis(username, false);
+                            // Wrap in try/catch to potentially catch errors during re-analysis
+                            try {
+                                await performAnalysis(username, false);
+                            } catch (e) {
+                                // Re-throw to let global handler catch it
+                                throw e;
+                            }
                         }
                     } else {
                         showTokenStatus(modalTokenStatus, 'Invalid token. Please check and try again.', false);
@@ -1194,11 +1310,9 @@
                     showTokenStatus(modalTokenStatus, 'Please enter a token', false);
                 }
             });
-
             modalCancelBtn.addEventListener('click', function() {
                 tokenModal.classList.remove('active');
             });
-
             saveTokenBtn.addEventListener('click', async function() {
                 if (GITHUB_TOKEN) {
                     // Delete token
@@ -1231,7 +1345,6 @@
                     }
                 }
             });
-
             tokenBtn.addEventListener('click', function() {
                 faqSection.style.display = 'none';
                 aboutSection.style.display = 'none';
@@ -1249,7 +1362,6 @@
                 }
                 tokenSection.scrollIntoView({ behavior: 'smooth' });
             });
-
             hallOfFameBtn.addEventListener('click', function() {
                 faqSection.style.display = 'none';
                 aboutSection.style.display = 'none';
@@ -1263,7 +1375,6 @@
                 }
                 hallOfFameSection.scrollIntoView({ behavior: 'smooth' });
             });
-
             faqBtn.addEventListener('click', function() {
                 aboutSection.style.display = 'none';
                 tokenSection.style.display = 'none';
@@ -1280,7 +1391,6 @@
                 }
                 faqSection.scrollIntoView({ behavior: 'smooth' });
             });
-
             aboutBtn.addEventListener('click', function() {
                 faqSection.style.display = 'none';
                 tokenSection.style.display = 'none';
@@ -1297,7 +1407,6 @@
                 }
                 aboutSection.scrollIntoView({ behavior: 'smooth' });
             });
-
             compilerTrigger.addEventListener('click', function(e) {
                 const rect = compilerTrigger.getBoundingClientRect();
                 const centerX = rect.left + rect.width / 2;
@@ -1316,7 +1425,6 @@
                     compilerSection.scrollIntoView({ behavior: 'smooth' });
                 }
             });
-
             compilerTrigger.addEventListener('mousemove', function(e) {
                 const rect = compilerTrigger.getBoundingClientRect();
                 const centerX = rect.left + rect.width / 2;
@@ -1331,7 +1439,6 @@
                     compilerTrigger.style.cursor = 'pointer';
                 }
             });
-
             toggleResultsBtn.addEventListener('click', function() {
                 if (resultsSection.style.display === 'none') {
                     resultsSection.style.display = 'block';
@@ -1356,19 +1463,16 @@
                     }
                 }
             });
-
             function updateProgress(percent, message) {
                 progressFill.style.width = `${percent}%`;
                 progressText.textContent = message;
             }
-
             function showTokenStatus(element, message, isValid) {
                 element.textContent = message;
                 element.className = 'token-status';
                 element.classList.add(isValid ? 'token-valid' : 'token-invalid');
                 element.style.display = 'block';
             }
-
             async function testToken(token) {
                 try {
                     const testHeaders = { "Authorization": `bearer ${token}` };
@@ -1383,7 +1487,6 @@
                     return false;
                 }
             }
-
             async function checkTokenStatus(token) {
                 const isValid = await testToken(token);
                 if (isValid) {
@@ -1392,13 +1495,13 @@
                     showTokenStatus(tokenStatus, 'Current token is invalid', false);
                 }
             }
-
             async function getUserIdRest(username) {
                 updateProgress(10, 'Fetching user ID (REST)...');
                 const url = `${REST_API_URL}/users/${username}`;
                 const response = await fetch(url, { headers: {} });
                 if (!response.ok) {
                     if (response.status === 403) {
+                        // Throw a specific error for rate limit
                         throw new Error(`REST API rate limit exceeded. Status: ${response.status}. Message: ${await response.text()}`);
                     }
                     throw new Error(`HTTP error! status: ${response.status}`);
@@ -1406,7 +1509,6 @@
                 const userData = await response.json();
                 return userData.id;
             }
-
             async function fetchRepositoriesRest(username) {
                 updateProgress(20, 'Fetching repositories (REST)...');
                 const ownedRepos = [];
@@ -1418,6 +1520,7 @@
                     const ownedResponse = await fetch(ownedUrl, { headers: {} });
                     if (!ownedResponse.ok) {
                         if (ownedResponse.status === 403) {
+                            // Throw a specific error for rate limit
                             throw new Error(`REST API rate limit exceeded. Status: ${ownedResponse.status}. Message: ${await ownedResponse.text()}`);
                         }
                         throw new Error(`HTTP error! status: ${ownedResponse.status}`);
@@ -1445,6 +1548,7 @@
                     const starredResponse = await fetch(starredUrl, { headers: {} });
                     if (!starredResponse.ok) {
                         if (starredResponse.status === 403) {
+                            // Throw a specific error for rate limit
                             throw new Error(`REST API rate limit exceeded. Status: ${starredResponse.status}. Message: ${await starredResponse.text()}`);
                         }
                         console.warn("Failed to fetch starred repos. Skipping contributed repos for REST fallback.");
@@ -1475,7 +1579,6 @@
                     contributedRepos: contributedRepos.slice(0, 100)
                 };
             }
-
             async function fetchRepoCommitsRest(owner, name, userId, username) {
                 const repoCommits = [];
                 let commitsPage = 1;
@@ -1486,6 +1589,7 @@
                     const commitsResponse = await fetch(commitsUrl, { headers: {} });
                     if (!commitsResponse.ok) {
                         if (commitsResponse.status === 403) {
+                            // Throw a specific error for rate limit
                             throw new Error(`REST API rate limit exceeded. Status: ${commitsResponse.status}. Message: ${await commitsResponse.text()}`);
                         }
                         console.warn(`Failed to fetch commits for ${owner}/${name}. Status: ${commitsResponse.status}. Skipping.`);
@@ -1509,7 +1613,6 @@
                 }
                 return repoCommits;
             }
-
             async function fetchCommitsForAllReposConcurrentRest(repos, userId, username) {
                 updateProgress(30, 'Fetching commit history (REST)...');
                 const validRepos = repos.filter(repo => repo.defaultBranchRef);
@@ -1548,7 +1651,6 @@
                 }
                 return results.filter(result => result !== null);
             }
-
             async function performAnalysis(username, useRestFallback = true) {
                 progressContainer.style.display = 'block';
                 updateProgress(0, useRestFallback ? 'Initializing analysis (REST)...' : 'Initializing analysis...');
@@ -1570,8 +1672,10 @@
                         resultsSection.style.opacity = '1';
                     }, 100);
                 } catch (error) {
-                    console.error('Error:', error);
+                    console.error('Error in performAnalysis:', error);
+                    // Check for rate limit error specifically
                     if (error.message.includes('rate limit')) {
+                        // Show rate limit modal
                         if (useRestFallback && !GITHUB_TOKEN) {
                             rateLimitText.innerHTML = `
                                 <p>You've hit the request limit 🥀</p>
@@ -1592,16 +1696,25 @@
                             `;
                             rateLimitModal.classList.add('active');
                         } else {
+                            // Fallback alert, though modal should be shown
                             alert('Error analyzing user: ' + error.message);
                         }
+                        // Do not re-throw rate limit errors as they are handled here
+                        // Return to prevent further processing in this block
+                        return;
                     } else {
-                        alert('Error analyzing user: ' + error.message);
+                        // For other errors caught here, re-throw them
+                        // so the global error handler can catch them and show the super error modal.
+                        // This is the key change to ensure the super error modal is used.
+                        throw error; // This will be caught by window.onerror
+                        // Alternatively, call showSuperErrorModal directly:
+                        // showSuperErrorModal(error.message);
+                        // But re-throwing lets the global handler manage it consistently.
                     }
                 } finally {
                     progressContainer.style.display = 'none';
                 }
             }
-
             async function getUserId(username, useRestFallback = true) {
                 if (useRestFallback) {
                     return await getUserIdRest(username);
@@ -1617,18 +1730,29 @@
                     })
                 });
                 if (!response.ok) {
+                    // Check for rate limit in GraphQL response
+                    if (response.status === 403) {
+                         const errorText = await response.text();
+                         if (errorText.includes('rate limit') || errorText.includes('API rate limit exceeded')) {
+                              throw new Error(`GraphQL API rate limit exceeded. Status: ${response.status}. Message: ${errorText}`);
+                         }
+                    }
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 const result = await response.json();
                 if (result.errors) {
-                    throw new Error(result.errors[0].message);
+                    // Check if the error is related to rate limiting
+                    const errorMessage = result.errors[0]?.message || 'Unknown GraphQL error';
+                    if (errorMessage.includes('rate limit') || errorMessage.includes('API rate limit exceeded')) {
+                         throw new Error(`GraphQL API rate limit exceeded. Message: ${errorMessage}`);
+                    }
+                    throw new Error(errorMessage);
                 }
                 if (!result.data.user) {
                     throw new Error(`User '${username}' not found`);
                 }
                 return result.data.user.id;
             }
-
             async function fetchRepositories(username, useRestFallback = true) {
                 if (useRestFallback) {
                     return await fetchRepositoriesRest(username);
@@ -1672,12 +1796,24 @@
                             }
                         })
                     });
-                    if (!ownerResponse.ok) {
+                     if (!ownerResponse.ok) {
+                        // Check for rate limit in GraphQL response
+                        if (ownerResponse.status === 403) {
+                             const errorText = await ownerResponse.text();
+                             if (errorText.includes('rate limit') || errorText.includes('API rate limit exceeded')) {
+                                  throw new Error(`GraphQL API rate limit exceeded. Status: ${ownerResponse.status}. Message: ${errorText}`);
+                             }
+                        }
                         throw new Error(`HTTP error! status: ${ownerResponse.status}`);
                     }
                     const ownerResult = await ownerResponse.json();
                     if (ownerResult.errors) {
-                        throw new Error(ownerResult.errors[0].message);
+                        // Check if the error is related to rate limiting
+                        const errorMessage = ownerResult.errors[0]?.message || 'Unknown GraphQL error';
+                        if (errorMessage.includes('rate limit') || errorMessage.includes('API rate limit exceeded')) {
+                             throw new Error(`GraphQL API rate limit exceeded. Message: ${errorMessage}`);
+                        }
+                        throw new Error(errorMessage);
                     }
                     const ownerData = ownerResult.data.user.repositories;
                     ownedRepos.push(...ownerData.nodes);
@@ -1721,12 +1857,24 @@
                             }
                         })
                     });
-                    if (!contribResponse.ok) {
+                     if (!contribResponse.ok) {
+                        // Check for rate limit in GraphQL response
+                        if (contribResponse.status === 403) {
+                             const errorText = await contribResponse.text();
+                             if (errorText.includes('rate limit') || errorText.includes('API rate limit exceeded')) {
+                                  throw new Error(`GraphQL API rate limit exceeded. Status: ${contribResponse.status}. Message: ${errorText}`);
+                             }
+                        }
                         throw new Error(`HTTP error! status: ${contribResponse.status}`);
                     }
                     const contribResult = await contribResponse.json();
                     if (contribResult.errors) {
-                        throw new Error(contribResult.errors[0].message);
+                        // Check if the error is related to rate limiting
+                        const errorMessage = contribResult.errors[0]?.message || 'Unknown GraphQL error';
+                        if (errorMessage.includes('rate limit') || errorMessage.includes('API rate limit exceeded')) {
+                             throw new Error(`GraphQL API rate limit exceeded. Message: ${errorMessage}`);
+                        }
+                        throw new Error(errorMessage);
                     }
                     const contribData = contribResult.data.user.repositoriesContributedTo;
                     contributedRepos.push(...contribData.nodes);
@@ -1740,7 +1888,6 @@
                     contributedRepos: uniqueContributedRepos.slice(0, 100)
                 };
             }
-
             async function fetchCommitsForAllReposConcurrent(repos, userId, username, useRestFallback = true) {
                 if (useRestFallback) {
                     return await fetchCommitsForAllReposConcurrentRest(repos, userId, username);
@@ -1774,7 +1921,6 @@
                 }
                 return results.filter(result => result !== null);
             }
-
             async function fetchRepoCommits(owner, name, userId, username) {
                 const repoCommits = [];
                 let hasCommitsNextPage = true;
@@ -1824,12 +1970,24 @@
                         headers: HEADERS,
                         body: JSON.stringify({ query: query })
                     });
-                    if (!response.ok) {
+                     if (!response.ok) {
+                        // Check for rate limit in GraphQL response
+                        if (response.status === 403) {
+                             const errorText = await response.text();
+                             if (errorText.includes('rate limit') || errorText.includes('API rate limit exceeded')) {
+                                  throw new Error(`GraphQL API rate limit exceeded. Status: ${response.status}. Message: ${errorText}`);
+                             }
+                        }
                         throw new Error(`HTTP error! status: ${response.status}`);
                     }
                     const result = await response.json();
                     if (result.errors) {
-                        throw new Error(result.errors[0].message);
+                        // Check if the error is related to rate limiting
+                        const errorMessage = result.errors[0]?.message || 'Unknown GraphQL error';
+                        if (errorMessage.includes('rate limit') || errorMessage.includes('API rate limit exceeded')) {
+                             throw new Error(`GraphQL API rate limit exceeded. Message: ${errorMessage}`);
+                        }
+                        throw new Error(errorMessage);
                     }
                     const data = result.data.repository;
                     if (!data || !data.defaultBranchRef || !data.defaultBranchRef.target) {
@@ -1850,7 +2008,6 @@
                 }
                 return repoCommits;
             }
-
             function displayResults(username, stats, commitsData) {
                 document.getElementById('commit-count').textContent = stats.totalCommits.toLocaleString();
                 document.getElementById('owned-repo-count').textContent = stats.ownedRepos;
@@ -1881,7 +2038,6 @@
                     repoAnalysis.dataset.showAllButtonId = showAllButton.id;
                 }
             }
-
             function displayTopRepos(commitsData, containerElement) {
                 const title = containerElement.querySelector('h2');
                 const showAllBtn = document.getElementById(containerElement.dataset.showAllButtonId);
@@ -1922,7 +2078,6 @@
                     containerElement.appendChild(showAllBtn);
                 }
             }
-
             function displayAllRepos(commitsData, containerElement) {
                 const title = containerElement.querySelector('h2');
                 containerElement.innerHTML = '';
@@ -1955,7 +2110,6 @@
                     containerElement.appendChild(repoDiv);
                 });
             }
-
             async function analyzeUser(username, useRestFallback = true) {
                 try {
                     const userId = await getUserId(username, useRestFallback);
@@ -1976,14 +2130,14 @@
                     updateProgress(100, useRestFallback ? 'Analysis complete (REST)!' : 'Analysis complete!');
                     displayResults(username, stats, commitsData);
                 } catch (error) {
+                    // Re-throw the error to be caught by the outer try/catch in performAnalysis
+                    // or directly by the global error handler if not caught there.
                     throw new Error(`Failed to analyze user: ${error.message}`);
                 }
             }
-
             forbiddenOkBtn.addEventListener('click', function() {
                 forbiddenModal.classList.remove('active');
             });
-
             function typeWriterText(text) {
                 typewriterText.innerHTML = '';
                 let i = 0;
@@ -2001,20 +2155,38 @@
                 }
                 typeWriter();
             }
-
             submitBtn1.addEventListener('click', function() {
                 robotModal.classList.remove('active');
                 resetForbiddenAttempts();
             });
-
             submitBtn2.addEventListener('click', function() {
                 robotModal.classList.remove('active');
                 resetForbiddenAttempts();
             });
-
             function resetForbiddenAttempts() {
                 forbiddenAttempts = 0;
             }
+
+             // --- NEW: Super Error Modal Button Listeners ---
+            frownBtn.addEventListener('click', function() {
+                hideSuperErrorModal();
+                // Do nothing else, just close the modal
+            });
+
+            petErrorBtn.addEventListener('click', function() {
+                // Store the petting action in localStorage
+                localStorage.setItem('bugEmojiPetted', 'true');
+                // Update the emoji showcase immediately
+                const bugSpan = document.createElement('span');
+                bugSpan.textContent = '🐛';
+                bugSpan.classList.add('bug-emoji'); // Add class for animation
+                emojiShowcase.appendChild(bugSpan);
+                hideSuperErrorModal();
+                // Optional: Add a small confirmation or animation?
+            });
+
+            // --- END: Super Error Modal Button Listeners ---
+
         });
     </script>
 </body>
