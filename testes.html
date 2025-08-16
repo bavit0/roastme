@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GitHub Roaster</title>
+    <title>🔥 RoastMe with Fire Effect</title>
     <style>
         * {
             margin: 0;
@@ -701,6 +701,88 @@
         .super-error-modal .modal-btn {
             padding: 10px 20px;
         }
+        /* Fire Effect Styles */
+        .fire-container {
+            position: fixed;
+            bottom: -350px;
+            left: 0;
+            width: 100%;
+            height: 350px;
+            pointer-events: none;
+            z-index: -1; /* Behind all content */
+            transition: bottom 1s ease-out;
+        }
+        .fire-container.active {
+            bottom: -50px;
+        }
+        .fire-container.fade-out {
+            bottom: -350px;
+            transition: bottom 1s ease-in;
+        }
+        .fire {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(ellipse at bottom, rgba(255, 100, 0, 0.8) 0%, rgba(255, 0, 0, 0.4) 40%, transparent 70%);
+            filter: blur(30px);
+            animation: fire-glow 1.2s infinite alternate;
+        }
+        .fire-particles {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            transition: opacity 0.3s ease 0.5s;
+        }
+        .fire-container.active .fire-particles {
+            opacity: 1;
+        }
+        .particle {
+            position: absolute;
+            background: rgba(255, 100, 0, 0.8);
+            border-radius: 50%;
+            bottom: 0;
+            animation: rise 3s infinite;
+        }
+        @keyframes fire-glow {
+            0% {
+                opacity: 0.7;
+                transform: scale(1);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1.2);
+            }
+        }
+        @keyframes rise {
+            0% {
+                transform: translateY(0) translateX(0);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-350px) translateX(30px);
+                opacity: 0;
+            }
+        }
+        /* --- NEW: Invalid Username Modal Styles --- */
+        .invalid-username-modal .modal-title {
+            color: #ffa502; /* Consistent with other modals */
+        }
+        .invalid-username-modal .modal-text {
+            text-align: center;
+        }
+        /* --- END: Invalid Username Modal Styles --- */
+
+        /* --- NEW: User Not Found Modal Styles --- */
+        .user-not-found-modal .modal-title {
+            color: #ffa502; /* Consistent with other modals */
+        }
+        .user-not-found-modal .modal-text {
+            text-align: center;
+        }
+        /* --- END: User Not Found Modal Styles --- */
 
         @media (max-width: 768px) {
             .input-group {
@@ -748,6 +830,11 @@
     </style>
 </head>
 <body>
+    <!-- Fire Effect Container -->
+    <div class="fire-container" id="fireContainer">
+        <div class="fire"></div>
+        <div class="fire-particles" id="fireParticles"></div>
+    </div>
     <div class="custom-scrollbar-container" id="custom-scrollbar">
         <div class="custom-scrollbar-track">
             <div class="custom-scrollbar-thumb" id="scrollbar-thumb"></div>
@@ -757,7 +844,7 @@
         <div class="container">
             <header>
                 <div class="logo" id="hall-of-fame-btn">🔥</div>
-                <h1>GITHUB ROASTER</h1>
+                <h1>ROASTME</h1>
                 <p class="subtitle">Drop a GitHub username and we'll dig through their commit graveyard, questionable code, and emoji crimes.</p>
                 <div class="emoji-showcase" id="emoji-showcase">
                     <span>🍖</span>
@@ -837,11 +924,11 @@
                 <h2>🤔 FREQUENTLY ASKED QUESTIONS</h2>
                 <div class="faq-item">
                     <div class="faq-question">Q: What is the purpose of this site?</div>
-                    <div class="faq-answer">A: We peek into GitHub’s GraphQL API, dig up public user data and… roast it just a little bit. Think of it as “self-reflection but spicier.”</div>
+                    <div class="faq-answer">A: You get to peek into GitHub profiles, check out their repos and commits, and have some fun along the way.</div>
                 </div>
                 <div class="faq-item">
                     <div class="faq-question">Q: How does it work?</div>
-                    <div class="faq-answer">A: Same magic. We poke GitHub with GraphQL API / REST API, grab public repos and commits, feed them into our highly scientific engine and show you the results low and slow <a href="https://www.youtube.com/@MaxtheMeatGuy/videos" style="color: inherit; text-decoration: inherit;" title="Meat Guy">🍖</a></div>
+                    <div class="faq-answer">A: We poke GitHub with GraphQL API / REST API, grab public repos and commits, feed them into our highly scientific grill engine and show you the results low and slow <a href="https://www.youtube.com/@MaxtheMeatGuy/videos" style="color: inherit; text-decoration: inherit;" title="Meat Guy">🍖</a></div>
                 </div>
                 <div class="faq-item">
                     <div class="faq-question">Q: Is this safe?</div>
@@ -968,7 +1055,7 @@
         </div>
         <div class="modal-overlay forbidden-modal" id="forbidden-modal">
             <div class="modal-content">
-                <h2 class="modal-title">⚠️ Heads down ⚠️</h2>
+                <h2 class="modal-title">⚠️ Heads down! ⚠️</h2>
                 <div class="modal-text">
                     <p>Don't even think about it!</p>
                     <p>If the Overlords catch wind of this, you'll be on code-reviewing duty for the next millennium.</p>
@@ -988,11 +1075,10 @@
                 </div>
             </div>
         </div>
-
         <!-- NEW Super Error Modal -->
         <div class="modal-overlay super-error-modal" id="super-error-modal">
             <div class="modal-content">
-                <h2 class="modal-title">Undefined Error 🤓☝️</h2>
+                <h2 class="modal-title">🤓☝️ Undefined Error! ☝️🤓</h2>
                 <div class="modal-text">Something went wrong...</div>
                 <div class="modal-buttons">
                     <button class="modal-btn secondary-btn" id="frown-btn">Frown and continue 😔</button>
@@ -1001,6 +1087,36 @@
             </div>
         </div>
         <!-- END NEW Super Error Modal -->
+
+        <!-- NEW: Invalid Username Modal -->
+        <div class="modal-overlay invalid-username-modal" id="invalid-username-modal">
+            <div class="modal-content">
+                <h2 class="modal-title">🏁 Almost there! 🏁</h2>
+                <div class="modal-text">
+                    Just a reminder — GitHub usernames can only use letters, numbers, and hyphens.
+                    They can’t start or end with a hyphen, and must be under 39 characters.
+                </div>
+                <div class="modal-buttons">
+                    <button class="modal-btn primary-btn" id="invalid-username-got-it-btn">Got it</button>
+                </div>
+            </div>
+        </div>
+        <!-- END: Invalid Username Modal -->
+
+        <!-- NEW: User Not Found Modal -->
+        <div class="modal-overlay user-not-found-modal" id="user-not-found-modal">
+            <div class="modal-content">
+                <h2 class="modal-title">🔎 Where Art Thou? 🔎</h2>
+                <div class="modal-text">
+                    Looks like this user doesn’t exist.
+                    Double-check the username?
+                </div>
+                <div class="modal-buttons">
+                    <button class="modal-btn primary-btn" id="user-not-found-got-it-btn">Got it</button>
+                </div>
+            </div>
+        </div>
+        <!-- END: User Not Found Modal -->
 
     </div>
     <div id="scroll-to-top" title="Scroll to Top">
@@ -1019,29 +1135,26 @@
             "microsoft", "bing", "viva", "azure"
         ];
         let forbiddenAttempts = 0;
-
+        // Fire effect variables
+        let fireActive = false;
+        let fireTimeout = null;
         // --- NEW: Super Error Handler Setup ---
         let isSuperErrorModalActive = false; // Prevent multiple modals
-
         function showSuperErrorModal(errorMessage) {
             if (isSuperErrorModalActive) return; // Prevent stacking
             isSuperErrorModalActive = true;
-
             const superErrorModal = document.getElementById('super-error-modal');
             const modalText = superErrorModal.querySelector('.modal-text');
             // Optional: Display the actual error message for debugging (comment out if not desired)
             // modalText.textContent = `Something went wrong... (${errorMessage})`;
             modalText.textContent = "Something went wrong...";
-
             superErrorModal.classList.add('active');
         }
-
         function hideSuperErrorModal() {
             const superErrorModal = document.getElementById('super-error-modal');
             superErrorModal.classList.remove('active');
             isSuperErrorModalActive = false;
         }
-
         // Global error handler for uncaught exceptions
         window.onerror = function(message, source, lineno, colno, error) {
             console.error("Global error handler caught:", message, "at", source, ":", lineno, ":", colno, "Error object:", error);
@@ -1049,7 +1162,6 @@
             showSuperErrorModal(message || "Unknown error");
             return true; // Prevent default browser error handling (like console)
         };
-
         // Global handler for unhandled promise rejections (async errors)
         window.addEventListener('unhandledrejection', function(event) {
             console.error("Unhandled promise rejection:", event.reason);
@@ -1057,9 +1169,97 @@
             showSuperErrorModal(event.reason?.message || "Promise rejection");
             event.preventDefault(); // Prevent default browser error handling
         });
-
         // --- END: Super Error Handler Setup ---
 
+        // --- NEW: Invalid Username Modal Functions ---
+        function showInvalidUsernameModal() {
+            // Ensure the fire effect is stopped if triggered by invalid input
+            stopFireEffect();
+            const invalidUsernameModal = document.getElementById('invalid-username-modal');
+            invalidUsernameModal.classList.add('active');
+        }
+
+        function hideInvalidUsernameModal() {
+            const invalidUsernameModal = document.getElementById('invalid-username-modal');
+            invalidUsernameModal.classList.remove('active');
+        }
+        // --- END: Invalid Username Modal Functions ---
+
+        // --- NEW: User Not Found Modal Functions ---
+        function showUserNotFoundModal() {
+            // Ensure the fire effect is stopped
+            stopFireEffect();
+            const userNotFoundModal = document.getElementById('user-not-found-modal');
+            userNotFoundModal.classList.add('active');
+        }
+
+        function hideUserNotFoundModal() {
+            const userNotFoundModal = document.getElementById('user-not-found-modal');
+            userNotFoundModal.classList.remove('active');
+        }
+        // --- END: User Not Found Modal Functions ---
+
+        // Fire effect functions
+        function createFireParticles() {
+            const fireParticles = document.getElementById('fireParticles');
+            fireParticles.innerHTML = '';
+            for (let i = 0; i < 70; i++) {
+                const particle = document.createElement('div');
+                particle.classList.add('particle');
+                // Random size
+                const size = Math.random() * 15 + 5;
+                particle.style.width = `${size}px`;
+                particle.style.height = `${size}px`;
+                // Random position within 70% width centered
+                const leftPosition = 15 + Math.random() * 70; // 15% to 85% (70% width centered)
+                particle.style.left = `${leftPosition}%`;
+                // Random animation delay and duration
+                const delay = Math.random() * 3;
+                const duration = Math.random() * 2 + 1;
+                particle.style.animationDelay = `${delay}s`;
+                particle.style.animationDuration = `${duration}s`;
+                // Random color
+                const colors = [
+                    'rgba(255, 100, 0, 0.8)',
+                    'rgba(255, 50, 0, 0.8)',
+                    'rgba(255, 150, 0, 0.8)',
+                    'rgba(255, 80, 0, 0.8)'
+                ];
+                particle.style.background = colors[Math.floor(Math.random() * colors.length)];
+                fireParticles.appendChild(particle);
+            }
+        }
+        function startFireEffect() {
+            if (fireActive) return;
+            const fireContainer = document.getElementById('fireContainer');
+            fireContainer.classList.remove('fade-out');
+            fireContainer.classList.add('active');
+            fireActive = true;
+            // Auto-stop fire after 10 seconds if not stopped manually
+            if (fireTimeout) clearTimeout(fireTimeout);
+            fireTimeout = setTimeout(stopFireEffect, 10000);
+        }
+        function stopFireEffect() {
+            if (!fireActive) return;
+            const fireContainer = document.getElementById('fireContainer');
+            fireContainer.classList.remove('active');
+            fireContainer.classList.add('fade-out');
+            fireActive = false;
+            if (fireTimeout) {
+                clearTimeout(fireTimeout);
+                fireTimeout = null;
+            }
+        }
+        // Helper function to check if an error is a rate limit error
+        function isRateLimitError(error) {
+            // Check if it's a rate limit error based on message or status code
+            return error.message.includes('rate limit') ||
+                   error.message.includes('API rate limit exceeded') ||
+                   error.message.includes('Status: 403') ||
+                   error.message.includes('Status: 429') ||
+                   error.message.includes('429') ||
+                   error.message.includes('403');
+        }
         document.addEventListener('DOMContentLoaded', function() {
             const customScrollbar = document.getElementById('custom-scrollbar');
             const scrollbarThumb = document.getElementById('scrollbar-thumb');
@@ -1108,8 +1308,19 @@
             const petErrorBtn = document.getElementById('pet-error-btn');
             // --- END: Super Error Modal Buttons ---
 
+            // --- NEW: Invalid Username Modal Elements ---
+            const invalidUsernameModal = document.getElementById('invalid-username-modal');
+            const invalidUsernameGotItBtn = document.getElementById('invalid-username-got-it-btn');
+            // --- END: Invalid Username Modal Elements ---
+
+            // --- NEW: User Not Found Modal Elements ---
+            const userNotFoundModal = document.getElementById('user-not-found-modal');
+            const userNotFoundGotItBtn = document.getElementById('user-not-found-got-it-btn');
+            // --- END: User Not Found Modal Elements ---
 
             let isScrolling = false;
+            // Initialize fire particles
+            createFireParticles();
             function handleScroll() {
                 if (!isScrolling) {
                     window.requestAnimationFrame(function() {
@@ -1135,7 +1346,6 @@
                 saveTokenBtn.classList.remove('primary-btn');
                 saveTokenBtn.classList.add('delete-token-btn');
             }
-
             // --- NEW: Initialize Emoji Showcase with Bug if Petted ---
             function initializeEmojiShowcase() {
                 const bugEmojiPetted = localStorage.getItem('bugEmojiPetted');
@@ -1148,7 +1358,6 @@
             }
             initializeEmojiShowcase(); // Call on page load
             // --- END: Initialize Emoji Showcase ---
-
             function initCustomScrollbar() {
                 if (contentWrapper.scrollHeight > window.innerHeight) {
                     customScrollbar.classList.add('visible');
@@ -1222,59 +1431,100 @@
             contentWrapper.addEventListener('scroll', scheduleHideScrollbar);
             customScrollbar.addEventListener('mouseleave', scheduleHideScrollbar);
             window.addEventListener('load', initCustomScrollbar);
+
+            // --- MODIFIED roastBtn Event Listener ---
             roastBtn.addEventListener('click', async function() {
-                const username = usernameInput.value.trim().toLowerCase();
-                if (username !== '') {
-                    if (forbiddenNames.includes(username)) {
-                        forbiddenAttempts++;
-                        forbiddenModal.classList.add('active');
-                        if (forbiddenAttempts >= 4) {
-                            setTimeout(() => {
-                                forbiddenModal.classList.remove('active');
-                                robotModal.classList.add('active');
-                                typeWriterText("Oh Great One, I bow before your greatness and solemnly pinky swear not to do that again.");
-                            }, 500);
-                        }
+                // 1. Clean the input (trim spaces)
+                let username = usernameInput.value.trim();
+
+                // 2. Basic client-side validation using regex
+                // GitHub username rules (simplified common ones):
+                // - 1 to 39 characters long
+                // - Contains only alphanumeric characters or single hyphens
+                // - Does not begin or end with a hyphen
+                const githubUsernameRegex = /^[a-zA-Z\d](?:[a-zA-Z\d]|-(?=[a-zA-Z\d])){0,38}$/;
+
+                if (!username) {
+                    // Handle empty input
+                    showInvalidUsernameModal();
+                    return; // Stop execution
+                }
+
+                if (!githubUsernameRegex.test(username)) {
+                    // 3. If format is invalid, show the new modal
+                    showInvalidUsernameModal();
+                    return; // Stop execution, don't proceed to API call
+                }
+
+                // If format is valid, proceed with checks
+                if (forbiddenNames.includes(username.toLowerCase())) {
+                    forbiddenAttempts++;
+                    forbiddenModal.classList.add('active');
+                    if (forbiddenAttempts >= 4) {
+                        setTimeout(() => {
+                            forbiddenModal.classList.remove('active');
+                            robotModal.classList.add('active');
+                            typeWriterText("Oh Great One, I bow before your greatness and solemnly pinky swear not to do that again.");
+                        }, 500);
+                    }
+                    return; // Stop if forbidden
+                }
+
+                // Update the input field with the cleaned username
+                usernameInput.value = username;
+
+                const useGraphQL = !!GITHUB_TOKEN;
+                // Start fire effect when analysis begins
+                startFireEffect();
+
+                // Wrap the analysis call in a try/catch to handle errors locally if needed,
+                // but re-throw to let the global handler catch them for the super error modal.
+                try {
+                     await performAnalysis(username, !useGraphQL);
+                } catch (error) {
+                    // Stop fire effect on ANY error caught here
+                    stopFireEffect();
+                    console.error("Error in roastBtn click handler:", error);
+
+                    // --- NEW: Check for "User Not Found" FIRST ---
+                    // Check if the error message indicates the user was not found.
+                    const userNotFoundIndicators = [
+                        "User", // REST API 404 message structure
+                        "Could not resolve to a User", // GraphQL specific error message
+                        "NOT_FOUND" // General GraphQL error code if present
+                    ];
+                    const isUserNotFoundError = userNotFoundIndicators.some(indicator =>
+                        error.message && error.message.includes(indicator)
+                    );
+
+                    if (isUserNotFoundError) {
+                         // --- HANDLE USER NOT FOUND GRACEFULLY ---
+                         // Show the new User Not Found modal
+                         console.log("User not found error caught and handled gracefully:", error.message);
+                         showUserNotFoundModal(); // Use the new dedicated function
+                         return; // Exit the catch block, do not show Super Error Modal or process as rate limit
+                    }
+                    // --- END NEW: Check for "User Not Found" ---
+
+                    // Check if it's a rate limit error handled specifically
+                    if (isRateLimitError(error)) {
+                        // Rate limit errors are handled inside performAnalysis or by the check above if thrown directly.
+                        // The performAnalysis function shows the rate limit modal.
+                        console.log("Rate limit error handled internally or by performAnalysis.");
+                        // Prevent the global handler from catching this specific rate limit error again.
                         return;
                     }
-                    const useGraphQL = !!GITHUB_TOKEN;
-                    // Wrap the analysis call in a try/catch to handle errors locally if needed,
-                    // but re-throw to let the global handler catch them for the super error modal.
-                    try {
-                         await performAnalysis(username, !useGraphQL);
-                    } catch (error) {
-                        // Check if it's a rate limit error handled specifically
-                        if (error.message.includes('rate limit')) {
-                            // The performAnalysis function already handles rate limits by showing the modal.
-                            // We don't need to do anything else here for rate limits.
-                            console.log("Rate limit error handled internally.");
-                            // Prevent the global handler from catching this specific rate limit error
-                            // by returning or not re-throwing.
-                            // However, if you want the super error modal for *any* error including rate limits,
-                            // you would re-throw here or call showSuperErrorModal directly.
-                            // For now, let's assume rate limits are handled internally and we want the super error
-                            // modal for other unexpected errors.
-                            // If performAnalysis *didn't* show the modal internally for rate limits, we'd need to check here.
-                            // But it seems it does, so we can just return.
-                             // Re-throw to let the global handler catch it and show the super error modal
-                             // if it's not a rate limit error already handled by performAnalysis.
-                             // Or, if performAnalysis shows the rate limit modal but *also* throws,
-                             // re-throwing here would trigger the global handler.
-                             // Let's re-throw to be safe and let the global handler decide based on the error message.
-                             // The global handler checks for 'rate limit' in the message.
-                             throw error; // This will be caught by window.onerror
-                        } else {
-                             // For non-rate-limit errors, re-throw to trigger the global handler
-                             throw error;
-                        }
-                        // If performAnalysis handles all errors internally (e.g., shows its own modals),
-                        // you might not need this try/catch block at all, or just use it for logging.
-                        // But to ensure the super error modal catches *any* unhandled error from the button click,
-                        // re-throwing is the way to go.
-                        // The global handler will differentiate based on the error message.
-                    }
+
+                     // For other unexpected errors, re-throw to trigger the global handler (Super Error Modal)
+                     // This ensures that genuine problems (network issues, code bugs) still show the Super Error Modal.
+                     throw error;
                 }
+                // Note: The fire effect stop is also handled in performAnalysis's finally block.
+                // Keeping it here ensures it stops even if performAnalysis doesn't run its finally (unlikely)
+                // or if an error is caught and handled before performAnalysis completes.
             });
+            // --- END MODIFIED roastBtn Event Listener ---
+
             usernameInput.addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') {
                     roastBtn.click();
@@ -1282,6 +1532,8 @@
             });
             gotItBtn.addEventListener('click', function() {
                 rateLimitModal.classList.remove('active');
+                // Stop fire effect when modal is closed
+                stopFireEffect();
             });
             modalSaveTokenBtn.addEventListener('click', async function() {
                 const token = modalTokenInput.value.trim();
@@ -1312,6 +1564,8 @@
             });
             modalCancelBtn.addEventListener('click', function() {
                 tokenModal.classList.remove('active');
+                // Stop fire effect when modal is closed
+                stopFireEffect();
             });
             saveTokenBtn.addEventListener('click', async function() {
                 if (GITHUB_TOKEN) {
@@ -1500,9 +1754,14 @@
                 const url = `${REST_API_URL}/users/${username}`;
                 const response = await fetch(url, { headers: {} });
                 if (!response.ok) {
-                    if (response.status === 403) {
-                        // Throw a specific error for rate limit
-                        throw new Error(`REST API rate limit exceeded. Status: ${response.status}. Message: ${await response.text()}`);
+                    // Check for rate limit errors (both 403 and 429)
+                    if (response.status === 403 || response.status === 429) {
+                        const errorText = await response.text();
+                        throw new Error(`REST API rate limit exceeded. Status: ${response.status}. Message: ${errorText}`);
+                    }
+                    // Check for 404 Not Found
+                    if (response.status === 404) {
+                         throw new Error(`User '${username}' not found`);
                     }
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
@@ -1519,9 +1778,14 @@
                     const ownedUrl = `${REST_API_URL}/users/${username}/repos?sort=updated&direction=desc&per_page=100&page=${ownedPage}`;
                     const ownedResponse = await fetch(ownedUrl, { headers: {} });
                     if (!ownedResponse.ok) {
-                        if (ownedResponse.status === 403) {
-                            // Throw a specific error for rate limit
-                            throw new Error(`REST API rate limit exceeded. Status: ${ownedResponse.status}. Message: ${await ownedResponse.text()}`);
+                        // Check for rate limit errors (both 403 and 429)
+                        if (ownedResponse.status === 403 || ownedResponse.status === 429) {
+                            const errorText = await ownedResponse.text();
+                            throw new Error(`REST API rate limit exceeded. Status: ${ownedResponse.status}. Message: ${errorText}`);
+                        }
+                        // Check for 404 Not Found (user not found)
+                        if (ownedResponse.status === 404) {
+                             throw new Error(`User '${username}' not found`);
                         }
                         throw new Error(`HTTP error! status: ${ownedResponse.status}`);
                     }
@@ -1547,9 +1811,14 @@
                     const starredUrl = `${REST_API_URL}/users/${username}/starred?per_page=30&page=${contribPage}`;
                     const starredResponse = await fetch(starredUrl, { headers: {} });
                     if (!starredResponse.ok) {
-                        if (starredResponse.status === 403) {
-                            // Throw a specific error for rate limit
-                            throw new Error(`REST API rate limit exceeded. Status: ${starredResponse.status}. Message: ${await starredResponse.text()}`);
+                        // Check for rate limit errors (both 403 and 429)
+                        if (starredResponse.status === 403 || starredResponse.status === 429) {
+                            const errorText = await starredResponse.text();
+                            throw new Error(`REST API rate limit exceeded. Status: ${starredResponse.status}. Message: ${errorText}`);
+                        }
+                        // Check for 404 Not Found (user not found)
+                        if (starredResponse.status === 404) {
+                             throw new Error(`User '${username}' not found`);
                         }
                         console.warn("Failed to fetch starred repos. Skipping contributed repos for REST fallback.");
                         break;
@@ -1588,9 +1857,16 @@
                     const commitsUrl = `${REST_API_URL}/repos/${owner}/${name}/commits?per_page=${perPage}&page=${commitsPage}`;
                     const commitsResponse = await fetch(commitsUrl, { headers: {} });
                     if (!commitsResponse.ok) {
-                        if (commitsResponse.status === 403) {
-                            // Throw a specific error for rate limit
-                            throw new Error(`REST API rate limit exceeded. Status: ${commitsResponse.status}. Message: ${await commitsResponse.text()}`);
+                        // Check for rate limit errors (both 403 and 429)
+                        if (commitsResponse.status === 403 || commitsResponse.status === 429) {
+                            const errorText = await commitsResponse.text();
+                            throw new Error(`REST API rate limit exceeded. Status: ${commitsResponse.status}. Message: ${errorText}`);
+                        }
+                        // Check for 404 Not Found (repo not found) - This is less likely to be the main "user not found" case
+                        // but good to handle.
+                        if (commitsResponse.status === 404) {
+                             console.warn(`Repository ${owner}/${name} not found. Skipping commits.`);
+                             break; // Stop fetching commits for this repo
                         }
                         console.warn(`Failed to fetch commits for ${owner}/${name}. Status: ${commitsResponse.status}. Skipping.`);
                         break;
@@ -1673,8 +1949,32 @@
                     }, 100);
                 } catch (error) {
                     console.error('Error in performAnalysis:', error);
+                    // Stop fire effect immediately on any error caught here
+                    stopFireEffect();
+                    // Hide progress bar immediately on any error caught here
+                    progressContainer.style.display = 'none';
+
+                    // --- NEW: Check for "User Not Found" FIRST ---
+                    // This handles errors from both REST and GraphQL API calls
+                    const userNotFoundIndicators = [
+                        "User", // REST API 404 message structure
+                        "Could not resolve to a User", // GraphQL specific error message
+                        "NOT_FOUND" // General GraphQL error code if present
+                    ];
+                    const isUserNotFoundError = userNotFoundIndicators.some(indicator =>
+                        error.message && error.message.includes(indicator)
+                    );
+
+                    if (isUserNotFoundError) {
+                        console.log("User not found error caught in performAnalysis:", error.message);
+                        // Show the new User Not Found modal
+                        showUserNotFoundModal(); // Use the new dedicated function
+                        return; // Exit the catch block, do not process as rate limit or show Super Error Modal
+                    }
+                    // --- END NEW: Check for "User Not Found" ---
+
                     // Check for rate limit error specifically
-                    if (error.message.includes('rate limit')) {
+                    if (isRateLimitError(error)) {
                         // Show rate limit modal
                         if (useRestFallback && !GITHUB_TOKEN) {
                             rateLimitText.innerHTML = `
@@ -1700,19 +2000,23 @@
                             alert('Error analyzing user: ' + error.message);
                         }
                         // Do not re-throw rate limit errors as they are handled here
-                        // Return to prevent further processing in this block
-                        return;
+                        return; // Exit the catch block
                     } else {
-                        // For other errors caught here, re-throw them
-                        // so the global error handler can catch them and show the super error modal.
-                        // This is the key change to ensure the super error modal is used.
-                        throw error; // This will be caught by window.onerror
-                        // Alternatively, call showSuperErrorModal directly:
-                        // showSuperErrorModal(error.message);
-                        // But re-throwing lets the global handler manage it consistently.
+                        // For other errors caught here (e.g., network issues, code bugs),
+                        // re-throw them so the global error handler can catch them
+                        // and show the super error modal.
+                        throw error; // This will be caught by window.onerror/unhandledrejection
                     }
                 } finally {
-                    progressContainer.style.display = 'none';
+                    // The finally block should ideally handle cleanup that always needs to run,
+                    // but stopFireEffect is also called in the specific error handlers above.
+                    // It's okay to call it here too, as it checks if the fire is active.
+                    // However, hiding progressContainer is better done in the specific handlers
+                    // right after determining the type of error, as the `finally` might run
+                    // even if we `return` early from the `catch`.
+                    progressContainer.style.display = 'none'; // Consider removing from here
+                    stopFireEffect(); // Consider removing from here if handled in catch
+                     // Or, keep them but be aware they run even on early returns.
                 }
             }
             async function getUserId(username, useRestFallback = true) {
@@ -1731,11 +2035,16 @@
                 });
                 if (!response.ok) {
                     // Check for rate limit in GraphQL response
-                    if (response.status === 403) {
+                    if (response.status === 403 || response.status === 429) {
                          const errorText = await response.text();
                          if (errorText.includes('rate limit') || errorText.includes('API rate limit exceeded')) {
                               throw new Error(`GraphQL API rate limit exceeded. Status: ${response.status}. Message: ${errorText}`);
                          }
+                    }
+                    // Check for 404-like error in GraphQL response text
+                    const errorText = await response.text();
+                    if (errorText.includes("Could not resolve to a User")) {
+                         throw new Error(`Could not resolve to a User with the login of '${username}'.`);
                     }
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
@@ -1745,6 +2054,10 @@
                     const errorMessage = result.errors[0]?.message || 'Unknown GraphQL error';
                     if (errorMessage.includes('rate limit') || errorMessage.includes('API rate limit exceeded')) {
                          throw new Error(`GraphQL API rate limit exceeded. Message: ${errorMessage}`);
+                    }
+                    // Check for "User not found" in GraphQL errors
+                    if (errorMessage.includes("Could not resolve to a User")) {
+                         throw new Error(`Could not resolve to a User with the login of '${username}'.`);
                     }
                     throw new Error(errorMessage);
                 }
@@ -1798,11 +2111,16 @@
                     });
                      if (!ownerResponse.ok) {
                         // Check for rate limit in GraphQL response
-                        if (ownerResponse.status === 403) {
+                        if (ownerResponse.status === 403 || ownerResponse.status === 429) {
                              const errorText = await ownerResponse.text();
                              if (errorText.includes('rate limit') || errorText.includes('API rate limit exceeded')) {
                                   throw new Error(`GraphQL API rate limit exceeded. Status: ${ownerResponse.status}. Message: ${errorText}`);
                              }
+                        }
+                        // Check for 404-like error in GraphQL response text
+                        const errorText = await ownerResponse.text();
+                        if (errorText.includes("Could not resolve to a User")) {
+                             throw new Error(`Could not resolve to a User with the login of '${username}'.`);
                         }
                         throw new Error(`HTTP error! status: ${ownerResponse.status}`);
                     }
@@ -1812,6 +2130,10 @@
                         const errorMessage = ownerResult.errors[0]?.message || 'Unknown GraphQL error';
                         if (errorMessage.includes('rate limit') || errorMessage.includes('API rate limit exceeded')) {
                              throw new Error(`GraphQL API rate limit exceeded. Message: ${errorMessage}`);
+                        }
+                        // Check for "User not found" in GraphQL errors
+                        if (errorMessage.includes("Could not resolve to a User")) {
+                             throw new Error(`Could not resolve to a User with the login of '${username}'.`);
                         }
                         throw new Error(errorMessage);
                     }
@@ -1859,11 +2181,16 @@
                     });
                      if (!contribResponse.ok) {
                         // Check for rate limit in GraphQL response
-                        if (contribResponse.status === 403) {
+                        if (contribResponse.status === 403 || contribResponse.status === 429) {
                              const errorText = await contribResponse.text();
                              if (errorText.includes('rate limit') || errorText.includes('API rate limit exceeded')) {
                                   throw new Error(`GraphQL API rate limit exceeded. Status: ${contribResponse.status}. Message: ${errorText}`);
                              }
+                        }
+                        // Check for 404-like error in GraphQL response text
+                        const errorText = await contribResponse.text();
+                        if (errorText.includes("Could not resolve to a User")) {
+                             throw new Error(`Could not resolve to a User with the login of '${username}'.`);
                         }
                         throw new Error(`HTTP error! status: ${contribResponse.status}`);
                     }
@@ -1873,6 +2200,10 @@
                         const errorMessage = contribResult.errors[0]?.message || 'Unknown GraphQL error';
                         if (errorMessage.includes('rate limit') || errorMessage.includes('API rate limit exceeded')) {
                              throw new Error(`GraphQL API rate limit exceeded. Message: ${errorMessage}`);
+                        }
+                        // Check for "User not found" in GraphQL errors
+                        if (errorMessage.includes("Could not resolve to a User")) {
+                             throw new Error(`Could not resolve to a User with the login of '${username}'.`);
                         }
                         throw new Error(errorMessage);
                     }
@@ -1972,11 +2303,18 @@
                     });
                      if (!response.ok) {
                         // Check for rate limit in GraphQL response
-                        if (response.status === 403) {
+                        if (response.status === 403 || response.status === 429) {
                              const errorText = await response.text();
                              if (errorText.includes('rate limit') || errorText.includes('API rate limit exceeded')) {
                                   throw new Error(`GraphQL API rate limit exceeded. Status: ${response.status}. Message: ${errorText}`);
                              }
+                        }
+                        // Check for 404 Not Found (repo not found) - This is less likely to be the main "user not found" case
+                        // but good to handle.
+                        const errorText = await response.text();
+                        if (errorText.includes("Could not resolve to a Repository")) {
+                             console.warn(`Repository ${owner}/${name} not found (GraphQL). Skipping commits.`);
+                             break; // Stop fetching commits for this repo
                         }
                         throw new Error(`HTTP error! status: ${response.status}`);
                     }
@@ -1986,6 +2324,11 @@
                         const errorMessage = result.errors[0]?.message || 'Unknown GraphQL error';
                         if (errorMessage.includes('rate limit') || errorMessage.includes('API rate limit exceeded')) {
                              throw new Error(`GraphQL API rate limit exceeded. Message: ${errorMessage}`);
+                        }
+                        // Check for "Repository not found" in GraphQL errors
+                        if (errorMessage.includes("Could not resolve to a Repository")) {
+                             console.warn(`Repository ${owner}/${name} not found (GraphQL error). Skipping commits.`);
+                             break; // Stop fetching commits for this repo
                         }
                         throw new Error(errorMessage);
                     }
@@ -2166,26 +2509,35 @@
             function resetForbiddenAttempts() {
                 forbiddenAttempts = 0;
             }
-
              // --- NEW: Super Error Modal Button Listeners ---
             frownBtn.addEventListener('click', function() {
                 hideSuperErrorModal();
                 // Do nothing else, just close the modal
             });
-
             petErrorBtn.addEventListener('click', function() {
                 // Store the petting action in localStorage
                 localStorage.setItem('bugEmojiPetted', 'true');
                 // Update the emoji showcase immediately
                 const bugSpan = document.createElement('span');
-                bugSpan.textContent = '🐛';F
+                bugSpan.textContent = '🐛';
                 bugSpan.classList.add('bug-emoji'); // Add class for animation
                 emojiShowcase.appendChild(bugSpan);
                 hideSuperErrorModal();
                 // Optional: Add a small confirmation or animation?
             });
-
             // --- END: Super Error Modal Button Listeners ---
+
+            // --- NEW: Invalid Username Modal Button Listener ---
+            invalidUsernameGotItBtn.addEventListener('click', function() {
+                hideInvalidUsernameModal();
+            });
+            // --- END: Invalid Username Modal Button Listener ---
+
+            // --- NEW: User Not Found Modal Button Listener ---
+            userNotFoundGotItBtn.addEventListener('click', function() {
+                hideUserNotFoundModal();
+            });
+            // --- END: User Not Found Modal Button Listener ---
 
         });
     </script>

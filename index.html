@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🔥 RoastMe with Fire Effect</title>
+    <title>🔥 RoastMe</title>
     <style>
         * {
             margin: 0;
@@ -701,7 +701,6 @@
         .super-error-modal .modal-btn {
             padding: 10px 20px;
         }
-        
         /* Fire Effect Styles */
         .fire-container {
             position: fixed;
@@ -713,16 +712,13 @@
             z-index: -1; /* Behind all content */
             transition: bottom 1s ease-out;
         }
-
         .fire-container.active {
             bottom: -50px;
         }
-
         .fire-container.fade-out {
             bottom: -350px;
             transition: bottom 1s ease-in;
         }
-
         .fire {
             position: absolute;
             bottom: 0;
@@ -732,7 +728,6 @@
             filter: blur(30px);
             animation: fire-glow 1.2s infinite alternate;
         }
-
         .fire-particles {
             position: absolute;
             bottom: 0;
@@ -741,11 +736,9 @@
             opacity: 0;
             transition: opacity 0.3s ease 0.5s;
         }
-
         .fire-container.active .fire-particles {
             opacity: 1;
         }
-
         .particle {
             position: absolute;
             background: rgba(255, 100, 0, 0.8);
@@ -753,7 +746,6 @@
             bottom: 0;
             animation: rise 3s infinite;
         }
-
         @keyframes fire-glow {
             0% {
                 opacity: 0.7;
@@ -764,7 +756,6 @@
                 transform: scale(1.2);
             }
         }
-
         @keyframes rise {
             0% {
                 transform: translateY(0) translateX(0);
@@ -775,7 +766,14 @@
                 opacity: 0;
             }
         }
-
+        /* --- NEW: Invalid Username Modal Styles --- */
+        .invalid-username-modal .modal-title {
+            color: #ffa502; /* Consistent with other modals */
+        }
+        .invalid-username-modal .modal-text {
+            text-align: center;
+        }
+        /* --- END: Invalid Username Modal Styles --- */
         @media (max-width: 768px) {
             .input-group {
                 flex-direction: column;
@@ -827,7 +825,6 @@
         <div class="fire"></div>
         <div class="fire-particles" id="fireParticles"></div>
     </div>
-    
     <div class="custom-scrollbar-container" id="custom-scrollbar">
         <div class="custom-scrollbar-track">
             <div class="custom-scrollbar-thumb" id="scrollbar-thumb"></div>
@@ -1048,7 +1045,7 @@
         </div>
         <div class="modal-overlay forbidden-modal" id="forbidden-modal">
             <div class="modal-content">
-                <h2 class="modal-title">⚠️ Heads down ⚠️</h2>
+                <h2 class="modal-title">⚠️ Heads down! ⚠️</h2>
                 <div class="modal-text">
                     <p>Don't even think about it!</p>
                     <p>If the Overlords catch wind of this, you'll be on code-reviewing duty for the next millennium.</p>
@@ -1071,7 +1068,7 @@
         <!-- NEW Super Error Modal -->
         <div class="modal-overlay super-error-modal" id="super-error-modal">
             <div class="modal-content">
-                <h2 class="modal-title">Undefined Error 🤓☝️</h2>
+                <h2 class="modal-title">🤓☝️ Undefined Error! ☝️🤓</h2>
                 <div class="modal-text">Something went wrong...</div>
                 <div class="modal-buttons">
                     <button class="modal-btn secondary-btn" id="frown-btn">Frown and continue 😔</button>
@@ -1080,6 +1077,22 @@
             </div>
         </div>
         <!-- END NEW Super Error Modal -->
+
+        <!-- NEW: Invalid Username Modal -->
+        <div class="modal-overlay invalid-username-modal" id="invalid-username-modal">
+            <div class="modal-content">
+                <h2 class="modal-title">🏁 Almost there! 🏁</h2>
+                <div class="modal-text">
+                    Just a reminder — GitHub usernames can only use letters, numbers, and hyphens.
+                    They can’t start or end with a hyphen, and must be under 39 characters.
+                </div>
+                <div class="modal-buttons">
+                    <button class="modal-btn primary-btn" id="invalid-username-got-it-btn">Got it</button>
+                </div>
+            </div>
+        </div>
+        <!-- END: Invalid Username Modal -->
+
     </div>
     <div id="scroll-to-top" title="Scroll to Top">
         <svg class="scroll-to-top-icon" viewBox="0 0 24 24">
@@ -1097,11 +1110,9 @@
             "microsoft", "bing", "viva", "azure"
         ];
         let forbiddenAttempts = 0;
-        
         // Fire effect variables
         let fireActive = false;
         let fireTimeout = null;
-        
         // --- NEW: Super Error Handler Setup ---
         let isSuperErrorModalActive = false; // Prevent multiple modals
         function showSuperErrorModal(errorMessage) {
@@ -1134,7 +1145,21 @@
             event.preventDefault(); // Prevent default browser error handling
         });
         // --- END: Super Error Handler Setup ---
-        
+
+        // --- NEW: Invalid Username Modal Functions ---
+        function showInvalidUsernameModal() {
+            // Ensure the fire effect is stopped if triggered by invalid input
+            stopFireEffect();
+            const invalidUsernameModal = document.getElementById('invalid-username-modal');
+            invalidUsernameModal.classList.add('active');
+        }
+
+        function hideInvalidUsernameModal() {
+            const invalidUsernameModal = document.getElementById('invalid-username-modal');
+            invalidUsernameModal.classList.remove('active');
+        }
+        // --- END: Invalid Username Modal Functions ---
+
         // Fire effect functions
         function createFireParticles() {
             const fireParticles = document.getElementById('fireParticles');
@@ -1142,22 +1167,18 @@
             for (let i = 0; i < 70; i++) {
                 const particle = document.createElement('div');
                 particle.classList.add('particle');
-                
                 // Random size
                 const size = Math.random() * 15 + 5;
                 particle.style.width = `${size}px`;
                 particle.style.height = `${size}px`;
-                
                 // Random position within 70% width centered
                 const leftPosition = 15 + Math.random() * 70; // 15% to 85% (70% width centered)
                 particle.style.left = `${leftPosition}%`;
-                
                 // Random animation delay and duration
                 const delay = Math.random() * 3;
                 const duration = Math.random() * 2 + 1;
                 particle.style.animationDelay = `${delay}s`;
                 particle.style.animationDuration = `${duration}s`;
-                
                 // Random color
                 const colors = [
                     'rgba(255, 100, 0, 0.8)',
@@ -1166,49 +1187,40 @@
                     'rgba(255, 80, 0, 0.8)'
                 ];
                 particle.style.background = colors[Math.floor(Math.random() * colors.length)];
-                
                 fireParticles.appendChild(particle);
             }
         }
-        
         function startFireEffect() {
             if (fireActive) return;
-            
             const fireContainer = document.getElementById('fireContainer');
             fireContainer.classList.remove('fade-out');
             fireContainer.classList.add('active');
             fireActive = true;
-            
             // Auto-stop fire after 10 seconds if not stopped manually
             if (fireTimeout) clearTimeout(fireTimeout);
             fireTimeout = setTimeout(stopFireEffect, 10000);
         }
-        
         function stopFireEffect() {
             if (!fireActive) return;
-            
             const fireContainer = document.getElementById('fireContainer');
             fireContainer.classList.remove('active');
             fireContainer.classList.add('fade-out');
             fireActive = false;
-            
             if (fireTimeout) {
                 clearTimeout(fireTimeout);
                 fireTimeout = null;
             }
         }
-        
         // Helper function to check if an error is a rate limit error
         function isRateLimitError(error) {
             // Check if it's a rate limit error based on message or status code
-            return error.message.includes('rate limit') || 
+            return error.message.includes('rate limit') ||
                    error.message.includes('API rate limit exceeded') ||
                    error.message.includes('Status: 403') ||
                    error.message.includes('Status: 429') ||
                    error.message.includes('429') ||
                    error.message.includes('403');
         }
-        
         document.addEventListener('DOMContentLoaded', function() {
             const customScrollbar = document.getElementById('custom-scrollbar');
             const scrollbarThumb = document.getElementById('scrollbar-thumb');
@@ -1256,11 +1268,15 @@
             const frownBtn = document.getElementById('frown-btn');
             const petErrorBtn = document.getElementById('pet-error-btn');
             // --- END: Super Error Modal Buttons ---
+
+            // --- NEW: Invalid Username Modal Elements ---
+            const invalidUsernameModal = document.getElementById('invalid-username-modal');
+            const invalidUsernameGotItBtn = document.getElementById('invalid-username-got-it-btn');
+            // --- END: Invalid Username Modal Elements ---
+
             let isScrolling = false;
-            
             // Initialize fire particles
             createFireParticles();
-            
             function handleScroll() {
                 if (!isScrolling) {
                     window.requestAnimationFrame(function() {
@@ -1371,65 +1387,76 @@
             contentWrapper.addEventListener('scroll', scheduleHideScrollbar);
             customScrollbar.addEventListener('mouseleave', scheduleHideScrollbar);
             window.addEventListener('load', initCustomScrollbar);
+
+            // --- MODIFIED roastBtn Event Listener ---
             roastBtn.addEventListener('click', async function() {
-                const username = usernameInput.value.trim().toLowerCase();
-                if (username !== '') {
-                    if (forbiddenNames.includes(username)) {
-                        forbiddenAttempts++;
-                        forbiddenModal.classList.add('active');
-                        if (forbiddenAttempts >= 4) {
-                            setTimeout(() => {
-                                forbiddenModal.classList.remove('active');
-                                robotModal.classList.add('active');
-                                typeWriterText("Oh Great One, I bow before your greatness and solemnly pinky swear not to do that again.");
-                            }, 500);
-                        }
-                        return;
+                // 1. Clean the input (trim spaces)
+                let username = usernameInput.value.trim();
+
+                // 2. Basic client-side validation using regex
+                // GitHub username rules (simplified common ones):
+                // - 1 to 39 characters long
+                // - Contains only alphanumeric characters or single hyphens
+                // - Does not begin or end with a hyphen
+                const githubUsernameRegex = /^[a-zA-Z\d](?:[a-zA-Z\d]|-(?=[a-zA-Z\d])){0,38}$/;
+
+                if (!username) {
+                    // Handle empty input
+                    showInvalidUsernameModal();
+                    return; // Stop execution
+                }
+
+                if (!githubUsernameRegex.test(username)) {
+                    // 3. If format is invalid, show the new modal
+                    showInvalidUsernameModal();
+                    return; // Stop execution, don't proceed to API call
+                }
+
+                // If format is valid, proceed with checks
+                if (forbiddenNames.includes(username.toLowerCase())) {
+                    forbiddenAttempts++;
+                    forbiddenModal.classList.add('active');
+                    if (forbiddenAttempts >= 4) {
+                        setTimeout(() => {
+                            forbiddenModal.classList.remove('active');
+                            robotModal.classList.add('active');
+                            typeWriterText("Oh Great One, I bow before your greatness and solemnly pinky swear not to do that again.");
+                        }, 500);
                     }
-                    const useGraphQL = !!GITHUB_TOKEN;
-                    // Start fire effect when analysis begins
-                    startFireEffect();
-                    
-                    // Wrap the analysis call in a try/catch to handle errors locally if needed,
-                    // but re-throw to let the global handler catch them for the super error modal.
-                    try {
-                         await performAnalysis(username, !useGraphQL);
-                    } catch (error) {
-                        // Stop fire effect on error
-                        stopFireEffect();
-                        
-                        // Check if it's a rate limit error handled specifically
-                        if (isRateLimitError(error)) {
-                            // The performAnalysis function already handles rate limits by showing the modal.
-                            // We don't need to do anything else here for rate limits.
-                            console.log("Rate limit error handled internally.");
-                            // Prevent the global handler from catching this specific rate limit error
-                            // by returning or not re-throwing.
-                            // However, if you want the super error modal for *any* error including rate limits,
-                            // you would re-throw here or call showSuperErrorModal directly.
-                            // For now, let's assume rate limits are handled internally and we want the super error
-                            // modal for other unexpected errors.
-                            // If performAnalysis *didn't* show the modal internally for rate limits, we'd need to check here.
-                            // But it seems it does, so we can just return.
-                             // Re-throw to let the global handler catch it and show the super error modal
-                             // if it's not a rate limit error already handled by performAnalysis.
-                             // Or, if performAnalysis shows the rate limit modal but *also* throws,
-                             // re-throwing here would trigger the global handler.
-                             // Let's re-throw to be safe and let the global handler decide based on the error message.
-                             // The global handler checks for 'rate limit' in the message.
-                             // throw error; // This will be caught by window.onerror
-                        } else {
-                             // For non-rate-limit errors, re-throw to trigger the global handler
-                             throw error;
-                        }
-                        // If performAnalysis handles all errors internally (e.g., shows its own modals),
-                        // you might not need this try/catch block at all, or just use it for logging.
-                        // But to ensure the super error modal catches *any* unhandled error from the button click,
-                        // re-throwing is the way to go.
-                        // The global handler will differentiate based on the error message.
+                    return; // Stop if forbidden
+                }
+
+                // Update the input field with the cleaned username
+                usernameInput.value = username;
+
+                const useGraphQL = !!GITHUB_TOKEN;
+                // Start fire effect when analysis begins
+                startFireEffect();
+
+                try {
+                    // Pass the cleaned username to performAnalysis
+                    await performAnalysis(username, !useGraphQL);
+                } catch (error) {
+                    // Stop fire effect on error
+                    stopFireEffect();
+                    // Check if it's a rate limit error handled specifically
+                    if (isRateLimitError(error)) {
+                        // Rate limit errors are handled inside performAnalysis
+                        console.log("Rate limit error handled internally.");
+                    } else if (error.message.includes('User') && error.message.includes('not found')) {
+                         // 4. Handle specific "User Not Found" error from API gracefully
+                         // Stop fire effect if not already stopped (done above)
+                         console.log("User not found, handled gracefully.");
+                         // Let the UI state reflect the result (empty/no results)
+                         return;
+                    } else {
+                        // For other unexpected errors, re-throw to trigger the global handler (Super Error Modal)
+                        throw error;
                     }
                 }
             });
+            // --- END MODIFIED roastBtn Event Listener ---
+
             usernameInput.addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') {
                     roastBtn.click();
@@ -1823,7 +1850,6 @@
                 hallOfFameSection.style.display = 'none';
                 compilerSection.style.display = 'none';
                 navButtons.forEach(btn => btn.classList.remove('active'));
-                
                 try {
                     await analyzeUser(username, useRestFallback);
                     resultsSection.style.display = 'block';
@@ -1837,7 +1863,6 @@
                     }, 100);
                 } catch (error) {
                     console.error('Error in performAnalysis:', error);
-                    
                     // Check for rate limit error specifically
                     if (isRateLimitError(error)) {
                         // Show rate limit modal
@@ -1870,11 +1895,7 @@
                     } else {
                         // For other errors caught here, re-throw them
                         // so the global error handler can catch them and show the super error modal.
-                        // This is the key change to ensure the super error modal is used.
-                        throw error; // This will be caught by window.onerror
-                        // Alternatively, call showSuperErrorModal directly:
-                        // showSuperErrorModal(error.message);
-                        // But re-throwing lets the global handler manage it consistently.
+                        throw error;
                     }
                 } finally {
                     progressContainer.style.display = 'none';
@@ -2350,6 +2371,13 @@
                 // Optional: Add a small confirmation or animation?
             });
             // --- END: Super Error Modal Button Listeners ---
+
+            // --- NEW: Invalid Username Modal Button Listener ---
+            invalidUsernameGotItBtn.addEventListener('click', function() {
+                hideInvalidUsernameModal();
+            });
+            // --- END: Invalid Username Modal Button Listener ---
+
         });
     </script>
 </body>
