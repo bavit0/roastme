@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🔥 RoastMe</title>
+    <title>🔥 RoastMe with Fire Effect</title>
     <style>
         * {
             margin: 0;
@@ -701,6 +701,80 @@
         .super-error-modal .modal-btn {
             padding: 10px 20px;
         }
+        
+        /* Fire Effect Styles */
+        .fire-container {
+            position: fixed;
+            bottom: -350px;
+            left: 0;
+            width: 100%;
+            height: 350px;
+            pointer-events: none;
+            z-index: -1; /* Behind all content */
+            transition: bottom 1s ease-out;
+        }
+
+        .fire-container.active {
+            bottom: -50px;
+        }
+
+        .fire-container.fade-out {
+            bottom: -350px;
+            transition: bottom 1s ease-in;
+        }
+
+        .fire {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(ellipse at bottom, rgba(255, 100, 0, 0.8) 0%, rgba(255, 0, 0, 0.4) 40%, transparent 70%);
+            filter: blur(30px);
+            animation: fire-glow 1.2s infinite alternate;
+        }
+
+        .fire-particles {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            transition: opacity 0.3s ease 0.5s;
+        }
+
+        .fire-container.active .fire-particles {
+            opacity: 1;
+        }
+
+        .particle {
+            position: absolute;
+            background: rgba(255, 100, 0, 0.8);
+            border-radius: 50%;
+            bottom: 0;
+            animation: rise 3s infinite;
+        }
+
+        @keyframes fire-glow {
+            0% {
+                opacity: 0.7;
+                transform: scale(1);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1.2);
+            }
+        }
+
+        @keyframes rise {
+            0% {
+                transform: translateY(0) translateX(0);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-350px) translateX(30px);
+                opacity: 0;
+            }
+        }
 
         @media (max-width: 768px) {
             .input-group {
@@ -748,6 +822,12 @@
     </style>
 </head>
 <body>
+    <!-- Fire Effect Container -->
+    <div class="fire-container" id="fireContainer">
+        <div class="fire"></div>
+        <div class="fire-particles" id="fireParticles"></div>
+    </div>
+    
     <div class="custom-scrollbar-container" id="custom-scrollbar">
         <div class="custom-scrollbar-track">
             <div class="custom-scrollbar-thumb" id="scrollbar-thumb"></div>
@@ -988,7 +1068,6 @@
                 </div>
             </div>
         </div>
-
         <!-- NEW Super Error Modal -->
         <div class="modal-overlay super-error-modal" id="super-error-modal">
             <div class="modal-content">
@@ -1001,7 +1080,6 @@
             </div>
         </div>
         <!-- END NEW Super Error Modal -->
-
     </div>
     <div id="scroll-to-top" title="Scroll to Top">
         <svg class="scroll-to-top-icon" viewBox="0 0 24 24">
@@ -1019,29 +1097,28 @@
             "microsoft", "bing", "viva", "azure"
         ];
         let forbiddenAttempts = 0;
-
+        
+        // Fire effect variables
+        let fireActive = false;
+        let fireTimeout = null;
+        
         // --- NEW: Super Error Handler Setup ---
         let isSuperErrorModalActive = false; // Prevent multiple modals
-
         function showSuperErrorModal(errorMessage) {
             if (isSuperErrorModalActive) return; // Prevent stacking
             isSuperErrorModalActive = true;
-
             const superErrorModal = document.getElementById('super-error-modal');
             const modalText = superErrorModal.querySelector('.modal-text');
             // Optional: Display the actual error message for debugging (comment out if not desired)
             // modalText.textContent = `Something went wrong... (${errorMessage})`;
             modalText.textContent = "Something went wrong...";
-
             superErrorModal.classList.add('active');
         }
-
         function hideSuperErrorModal() {
             const superErrorModal = document.getElementById('super-error-modal');
             superErrorModal.classList.remove('active');
             isSuperErrorModalActive = false;
         }
-
         // Global error handler for uncaught exceptions
         window.onerror = function(message, source, lineno, colno, error) {
             console.error("Global error handler caught:", message, "at", source, ":", lineno, ":", colno, "Error object:", error);
@@ -1049,7 +1126,6 @@
             showSuperErrorModal(message || "Unknown error");
             return true; // Prevent default browser error handling (like console)
         };
-
         // Global handler for unhandled promise rejections (async errors)
         window.addEventListener('unhandledrejection', function(event) {
             console.error("Unhandled promise rejection:", event.reason);
@@ -1057,9 +1133,82 @@
             showSuperErrorModal(event.reason?.message || "Promise rejection");
             event.preventDefault(); // Prevent default browser error handling
         });
-
         // --- END: Super Error Handler Setup ---
-
+        
+        // Fire effect functions
+        function createFireParticles() {
+            const fireParticles = document.getElementById('fireParticles');
+            fireParticles.innerHTML = '';
+            for (let i = 0; i < 70; i++) {
+                const particle = document.createElement('div');
+                particle.classList.add('particle');
+                
+                // Random size
+                const size = Math.random() * 15 + 5;
+                particle.style.width = `${size}px`;
+                particle.style.height = `${size}px`;
+                
+                // Random position within 70% width centered
+                const leftPosition = 15 + Math.random() * 70; // 15% to 85% (70% width centered)
+                particle.style.left = `${leftPosition}%`;
+                
+                // Random animation delay and duration
+                const delay = Math.random() * 3;
+                const duration = Math.random() * 2 + 1;
+                particle.style.animationDelay = `${delay}s`;
+                particle.style.animationDuration = `${duration}s`;
+                
+                // Random color
+                const colors = [
+                    'rgba(255, 100, 0, 0.8)',
+                    'rgba(255, 50, 0, 0.8)',
+                    'rgba(255, 150, 0, 0.8)',
+                    'rgba(255, 80, 0, 0.8)'
+                ];
+                particle.style.background = colors[Math.floor(Math.random() * colors.length)];
+                
+                fireParticles.appendChild(particle);
+            }
+        }
+        
+        function startFireEffect() {
+            if (fireActive) return;
+            
+            const fireContainer = document.getElementById('fireContainer');
+            fireContainer.classList.remove('fade-out');
+            fireContainer.classList.add('active');
+            fireActive = true;
+            
+            // Auto-stop fire after 10 seconds if not stopped manually
+            if (fireTimeout) clearTimeout(fireTimeout);
+            fireTimeout = setTimeout(stopFireEffect, 10000);
+        }
+        
+        function stopFireEffect() {
+            if (!fireActive) return;
+            
+            const fireContainer = document.getElementById('fireContainer');
+            fireContainer.classList.remove('active');
+            fireContainer.classList.add('fade-out');
+            fireActive = false;
+            
+            if (fireTimeout) {
+                clearTimeout(fireTimeout);
+                fireTimeout = null;
+            }
+        }
+        
+        // Helper function to check if an error is a rate limit error
+        function isRateLimitError(error) {
+            // Check if it's a rate limit error based on message or status code
+            return error.message.includes('rate limit') || 
+                   error.message.includes('API rate limit exceeded') ||
+                   error.message.includes('Status: 403') ||
+                   error.message.includes('Status: 429') ||
+                   error.message.includes('429') ||
+                   error.message.includes('403');
+        }
+        
         document.addEventListener('DOMContentLoaded', function() {
             const customScrollbar = document.getElementById('custom-scrollbar');
             const scrollbarThumb = document.getElementById('scrollbar-thumb');
@@ -1107,9 +1256,11 @@
             const frownBtn = document.getElementById('frown-btn');
             const petErrorBtn = document.getElementById('pet-error-btn');
             // --- END: Super Error Modal Buttons ---
-
-
             let isScrolling = false;
+            
+            // Initialize fire particles
+            createFireParticles();
+            
             function handleScroll() {
                 if (!isScrolling) {
                     window.requestAnimationFrame(function() {
@@ -1135,7 +1286,6 @@
                 saveTokenBtn.classList.remove('primary-btn');
                 saveTokenBtn.classList.add('delete-token-btn');
             }
-
             // --- NEW: Initialize Emoji Showcase with Bug if Petted ---
             function initializeEmojiShowcase() {
                 const bugEmojiPetted = localStorage.getItem('bugEmojiPetted');
@@ -1148,7 +1298,6 @@
             }
             initializeEmojiShowcase(); // Call on page load
             // --- END: Initialize Emoji Showcase ---
-
             function initCustomScrollbar() {
                 if (contentWrapper.scrollHeight > window.innerHeight) {
                     customScrollbar.classList.add('visible');
@@ -1238,13 +1387,19 @@
                         return;
                     }
                     const useGraphQL = !!GITHUB_TOKEN;
+                    // Start fire effect when analysis begins
+                    startFireEffect();
+                    
                     // Wrap the analysis call in a try/catch to handle errors locally if needed,
                     // but re-throw to let the global handler catch them for the super error modal.
                     try {
                          await performAnalysis(username, !useGraphQL);
                     } catch (error) {
+                        // Stop fire effect on error
+                        stopFireEffect();
+                        
                         // Check if it's a rate limit error handled specifically
-                        if (error.message.includes('rate limit')) {
+                        if (isRateLimitError(error)) {
                             // The performAnalysis function already handles rate limits by showing the modal.
                             // We don't need to do anything else here for rate limits.
                             console.log("Rate limit error handled internally.");
@@ -1262,7 +1417,7 @@
                              // re-throwing here would trigger the global handler.
                              // Let's re-throw to be safe and let the global handler decide based on the error message.
                              // The global handler checks for 'rate limit' in the message.
-                             throw error; // This will be caught by window.onerror
+                             // throw error; // This will be caught by window.onerror
                         } else {
                              // For non-rate-limit errors, re-throw to trigger the global handler
                              throw error;
@@ -1282,6 +1437,8 @@
             });
             gotItBtn.addEventListener('click', function() {
                 rateLimitModal.classList.remove('active');
+                // Stop fire effect when modal is closed
+                stopFireEffect();
             });
             modalSaveTokenBtn.addEventListener('click', async function() {
                 const token = modalTokenInput.value.trim();
@@ -1312,6 +1469,8 @@
             });
             modalCancelBtn.addEventListener('click', function() {
                 tokenModal.classList.remove('active');
+                // Stop fire effect when modal is closed
+                stopFireEffect();
             });
             saveTokenBtn.addEventListener('click', async function() {
                 if (GITHUB_TOKEN) {
@@ -1500,9 +1659,10 @@
                 const url = `${REST_API_URL}/users/${username}`;
                 const response = await fetch(url, { headers: {} });
                 if (!response.ok) {
-                    if (response.status === 403) {
-                        // Throw a specific error for rate limit
-                        throw new Error(`REST API rate limit exceeded. Status: ${response.status}. Message: ${await response.text()}`);
+                    // Check for rate limit errors (both 403 and 429)
+                    if (response.status === 403 || response.status === 429) {
+                        const errorText = await response.text();
+                        throw new Error(`REST API rate limit exceeded. Status: ${response.status}. Message: ${errorText}`);
                     }
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
@@ -1519,9 +1679,10 @@
                     const ownedUrl = `${REST_API_URL}/users/${username}/repos?sort=updated&direction=desc&per_page=100&page=${ownedPage}`;
                     const ownedResponse = await fetch(ownedUrl, { headers: {} });
                     if (!ownedResponse.ok) {
-                        if (ownedResponse.status === 403) {
-                            // Throw a specific error for rate limit
-                            throw new Error(`REST API rate limit exceeded. Status: ${ownedResponse.status}. Message: ${await ownedResponse.text()}`);
+                        // Check for rate limit errors (both 403 and 429)
+                        if (ownedResponse.status === 403 || ownedResponse.status === 429) {
+                            const errorText = await ownedResponse.text();
+                            throw new Error(`REST API rate limit exceeded. Status: ${ownedResponse.status}. Message: ${errorText}`);
                         }
                         throw new Error(`HTTP error! status: ${ownedResponse.status}`);
                     }
@@ -1547,9 +1708,10 @@
                     const starredUrl = `${REST_API_URL}/users/${username}/starred?per_page=30&page=${contribPage}`;
                     const starredResponse = await fetch(starredUrl, { headers: {} });
                     if (!starredResponse.ok) {
-                        if (starredResponse.status === 403) {
-                            // Throw a specific error for rate limit
-                            throw new Error(`REST API rate limit exceeded. Status: ${starredResponse.status}. Message: ${await starredResponse.text()}`);
+                        // Check for rate limit errors (both 403 and 429)
+                        if (starredResponse.status === 403 || starredResponse.status === 429) {
+                            const errorText = await starredResponse.text();
+                            throw new Error(`REST API rate limit exceeded. Status: ${starredResponse.status}. Message: ${errorText}`);
                         }
                         console.warn("Failed to fetch starred repos. Skipping contributed repos for REST fallback.");
                         break;
@@ -1588,9 +1750,10 @@
                     const commitsUrl = `${REST_API_URL}/repos/${owner}/${name}/commits?per_page=${perPage}&page=${commitsPage}`;
                     const commitsResponse = await fetch(commitsUrl, { headers: {} });
                     if (!commitsResponse.ok) {
-                        if (commitsResponse.status === 403) {
-                            // Throw a specific error for rate limit
-                            throw new Error(`REST API rate limit exceeded. Status: ${commitsResponse.status}. Message: ${await commitsResponse.text()}`);
+                        // Check for rate limit errors (both 403 and 429)
+                        if (commitsResponse.status === 403 || commitsResponse.status === 429) {
+                            const errorText = await commitsResponse.text();
+                            throw new Error(`REST API rate limit exceeded. Status: ${commitsResponse.status}. Message: ${errorText}`);
                         }
                         console.warn(`Failed to fetch commits for ${owner}/${name}. Status: ${commitsResponse.status}. Skipping.`);
                         break;
@@ -1660,6 +1823,7 @@
                 hallOfFameSection.style.display = 'none';
                 compilerSection.style.display = 'none';
                 navButtons.forEach(btn => btn.classList.remove('active'));
+                
                 try {
                     await analyzeUser(username, useRestFallback);
                     resultsSection.style.display = 'block';
@@ -1673,8 +1837,9 @@
                     }, 100);
                 } catch (error) {
                     console.error('Error in performAnalysis:', error);
+                    
                     // Check for rate limit error specifically
-                    if (error.message.includes('rate limit')) {
+                    if (isRateLimitError(error)) {
                         // Show rate limit modal
                         if (useRestFallback && !GITHUB_TOKEN) {
                             rateLimitText.innerHTML = `
@@ -1713,6 +1878,8 @@
                     }
                 } finally {
                     progressContainer.style.display = 'none';
+                    // Stop fire effect when analysis completes
+                    stopFireEffect();
                 }
             }
             async function getUserId(username, useRestFallback = true) {
@@ -1731,7 +1898,7 @@
                 });
                 if (!response.ok) {
                     // Check for rate limit in GraphQL response
-                    if (response.status === 403) {
+                    if (response.status === 403 || response.status === 429) {
                          const errorText = await response.text();
                          if (errorText.includes('rate limit') || errorText.includes('API rate limit exceeded')) {
                               throw new Error(`GraphQL API rate limit exceeded. Status: ${response.status}. Message: ${errorText}`);
@@ -1798,7 +1965,7 @@
                     });
                      if (!ownerResponse.ok) {
                         // Check for rate limit in GraphQL response
-                        if (ownerResponse.status === 403) {
+                        if (ownerResponse.status === 403 || ownerResponse.status === 429) {
                              const errorText = await ownerResponse.text();
                              if (errorText.includes('rate limit') || errorText.includes('API rate limit exceeded')) {
                                   throw new Error(`GraphQL API rate limit exceeded. Status: ${ownerResponse.status}. Message: ${errorText}`);
@@ -1859,7 +2026,7 @@
                     });
                      if (!contribResponse.ok) {
                         // Check for rate limit in GraphQL response
-                        if (contribResponse.status === 403) {
+                        if (contribResponse.status === 403 || contribResponse.status === 429) {
                              const errorText = await contribResponse.text();
                              if (errorText.includes('rate limit') || errorText.includes('API rate limit exceeded')) {
                                   throw new Error(`GraphQL API rate limit exceeded. Status: ${contribResponse.status}. Message: ${errorText}`);
@@ -1972,7 +2139,7 @@
                     });
                      if (!response.ok) {
                         // Check for rate limit in GraphQL response
-                        if (response.status === 403) {
+                        if (response.status === 403 || response.status === 429) {
                              const errorText = await response.text();
                              if (errorText.includes('rate limit') || errorText.includes('API rate limit exceeded')) {
                                   throw new Error(`GraphQL API rate limit exceeded. Status: ${response.status}. Message: ${errorText}`);
@@ -2166,13 +2333,11 @@
             function resetForbiddenAttempts() {
                 forbiddenAttempts = 0;
             }
-
              // --- NEW: Super Error Modal Button Listeners ---
             frownBtn.addEventListener('click', function() {
                 hideSuperErrorModal();
                 // Do nothing else, just close the modal
             });
-
             petErrorBtn.addEventListener('click', function() {
                 // Store the petting action in localStorage
                 localStorage.setItem('bugEmojiPetted', 'true');
@@ -2184,9 +2349,7 @@
                 hideSuperErrorModal();
                 // Optional: Add a small confirmation or animation?
             });
-
             // --- END: Super Error Modal Button Listeners ---
-
         });
     </script>
 </body>
