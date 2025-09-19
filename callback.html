@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<body>
+<script>
+const params = new URLSearchParams(window.location.search);
+const code = params.get("code");
+
+if (!code) {
+  document.body.innerText = "No code found!";
+} else {
+  fetch("https://your-netlify-site.netlify.app/.netlify/functions/auth", {
+    method: "POST",
+    body: `code=${code}`,
+  })
+    .then(r => r.json())
+    .then(data => {
+      const token = data.access_token;
+      console.log("Token in memory:", token);
+
+      // Example GraphQL query
+      return fetch("https://api.github.com/graphql", {
+        method: "POST",
+        headers: { 
+          "Authorization": `bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ query: "{ viewer { login } }" })
+      });
+    })
+    .then(r => r.json())
+    .then(console.log)
+    .catch(console.error);
+}
+</script>
+</body>
+</html>
