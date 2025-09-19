@@ -2,30 +2,35 @@
 <html>
 <body>
 <script>
+const TOKEN_KEY = "gh_token";
+
+// Utility function to save token with expiry
+function saveToken(token) {
+  const expiry = Date.now() + 60 * 60 * 500; // 30 mins
+  const obj = { token, expiry };
+  sessionStorage.setItem(TOKEN_KEY, JSON.stringify(obj));
+}
+
+// Get OAuth code from URL
 const params = new URLSearchParams(window.location.search);
 const code = params.get("code");
 
 if (!code) {
   document.body.innerText = "No code found!";
 } else {
-  fetch("https://your-netlify-site.netlify.app/.netlify/functions/auth", {
+  fetch("https://roastme-backend.netlify.app/.netlify/functions/auth", {
     method: "POST",
     body: `code=${code}`,
   })
     .then(r => r.json())
     .then(data => {
       const token = data.access_token;
-      console.log("Token in memory:", token);
+      if (!token) throw new Error("No access token returned");
 
-      // Example GraphQL query
-      return fetch("https://api.github.com/graphql", {
-        method: "POST",
-        headers: { 
-          "Authorization": `bearer ${token}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ query: "{ viewer { login } }" })
-      });
+      // Save token in sessionStorage
+      saveToken(token);
+      console.log("Token saved in sessionStorage for 30 min:", token);
+
     })
     .then(r => r.json())
     .then(console.log)
